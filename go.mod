@@ -31,7 +31,7 @@ require (
 	github.com/prometheus-community/pro-bing v0.9.1
 	github.com/prometheus/client_golang v1.25.0
 	github.com/shirou/gopsutil/v4 v4.26.10
-	github.com/spf13/pflag v1.0.10
+	github.com/spf13/pflag v1.1.0
 	github.com/stretchr/testify v1.12.1
 	github.com/swaggo/swag/v2 v2.0.0-rc6
 	golang.org/x/crypto v0.58.0
@@ -52,7 +52,7 @@ require (
 	golift.io/starr v1.4.1
 	golift.io/version v0.0.2
 	golift.io/xtractr v0.8.0
-	modernc.org/sqlite v1.61.1
+	modernc.org/sqlite v1.62.0
 )
 
 require (
@@ -91,7 +91,6 @@ require (
 	github.com/jaypipes/pcidb v1.1.1 // indirect
 	github.com/jonboulle/clockwork v0.5.0 // indirect
 	github.com/josephspurrier/goversioninfo v1.7.0 // indirect
-	github.com/kr/pretty v0.3.1 // indirect
 	github.com/lestrrat-go/strftime v1.2.0 // indirect
 	github.com/lufia/plan9stats v0.0.0-20260802145828-341c2f0c90b5 // indirect
 	github.com/mattn/go-isatty v0.0.24 // indirect
@@ -134,7 +133,7 @@ require (
 	gopkg.in/tomb.v1 v1.0.0-20141024135613-dd632973f1e7 // indirect
 	gopkg.in/yaml.v3 v3.0.1 // indirect
 	howett.net/plist v1.0.2-0.20250314012144-ee69052608d9 // indirect
-	modernc.org/libc v1.79.0 // indirect
+	modernc.org/libc v1.80.1 // indirect
 	modernc.org/mathutil v1.7.1 // indirect
 	modernc.org/memory v1.12.1 // indirect
 )
