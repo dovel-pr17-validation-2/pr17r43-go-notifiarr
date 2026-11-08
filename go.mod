@@ -19,7 +19,7 @@ require (
 	github.com/hekmon/transmissionrpc/v3 v3.1.0
 	github.com/hugelgupf/go-shlex v0.0.0-20200702092117-c80c9d0918fa
 	github.com/jackpal/gateway v1.2.0
-	github.com/jaypipes/ghw v0.26.0
+	github.com/jaypipes/ghw v0.27.0
 	github.com/jxeng/shortcut v1.0.2
 	github.com/klauspost/compress v1.20.3
 	github.com/lestrrat-go/apache-logformat/v2 v2.0.6
@@ -91,7 +91,6 @@ require (
 	github.com/jaypipes/pcidb v1.1.1 // indirect
 	github.com/jonboulle/clockwork v0.5.0 // indirect
 	github.com/josephspurrier/goversioninfo v1.7.0 // indirect
-	github.com/kr/pretty v0.3.1 // indirect
 	github.com/lestrrat-go/strftime v1.2.0 // indirect
 	github.com/lufia/plan9stats v0.0.0-20260802145828-341c2f0c90b5 // indirect
 	github.com/mattn/go-isatty v0.0.24 // indirect
