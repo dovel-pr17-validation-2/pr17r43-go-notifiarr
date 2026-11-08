@@ -1,0 +1,1750 @@
+{
+  "words": {
+    "select-option": {
+      "Off": "Off",
+      "Enabled": "Enabled",
+      "Disabled": "Disabled",
+      "minute": "minute",
+      "minutes": "minutes",
+      "hour": "hour",
+      "hours": "hours",
+      "second": "second",
+      "seconds": "seconds",
+      "megabytes": "megabytes",
+      "bytes": "bytes",
+      "Daily": "Daily",
+      "custom": "custom",
+      "Information": "Information",
+      "InstanceDisabled": "Instance Disabled",
+      "NoTimeout": "No Timeout",
+      "ChecksDisabled": "Checks Disabled"
+    },
+    "instance-options": {
+      "interval": {
+        "label": "Health Check Interval",
+        "description": "How often to check the instance's reachability."
+      },
+      "timeout": {
+        "label": "Request Timeout",
+        "description": "How long to wait for a response from the instance."
+      },
+      "validSsl": {
+        "label": "Validate SSL Certificate",
+        "description": "Checking the box makes sure the instance is using a valid SSL certificate."
+      },
+      "deletes": {
+        "label": "Delete Content",
+        "description": "This limits the number of delete requests that may be sent to this instance in an hour.",
+        "tooltip": "This controls how many delete requests are allowed per hour. A setting of 0 disables the ability to send delete requests. This refers to media deletes, but may include other actions. This is a throttle to prevent hackers from obliterating your content.",
+        "countPerHour": "{count} per hour"
+      }
+    },
+    "clock": {
+      "days": {
+        "Sunday": "Sunday",
+        "Monday": "Monday",
+        "Tuesday": "Tuesday",
+        "Wednesday": "Wednesday",
+        "Thursday": "Thursday",
+        "Friday": "Friday",
+        "Saturday": "Saturday"
+      },
+      "short": {
+        "ms": "{milliseconds}ms",
+        "s": "{seconds}s",
+        "m": "{minutes}m",
+        "h": "{hours}h",
+        "d": "{days}d",
+        "w": "{weeks}w"
+      },
+      "format": "{weeks}{days}{hours}{minutes}{seconds}{milliseconds}",
+      "ago": "{timeDuration} ago"
+    },
+    "bytes": {
+      "short": {
+        "B": "{bytes} B",
+        "KB": "{bytes} KB",
+        "MB": "{bytes} MB",
+        "GB": "{bytes} GB",
+        "TB": "{bytes} TB"
+      }
+    }
+  },
+  "buttons": {
+    "Login": "Login",
+    "LoginTitle": "Login",
+    "Confirm": "Confirm",
+    "Cancel": "Cancel",
+    "Create": "Create",
+    "Save": "Save",
+    "Close": "Close",
+    "SaveChanges": "Save Changes",
+    "SaveConfiguration": "Save Configuration",
+    "ResetForm": "Reset Form",
+    "NoStayHere": "No! Stay here",
+    "YesDeleteMyChanges": "Yes! Delete my changes",
+    "Execute": "Execute",
+    "HideMenu": "Hide Menu",
+    "ShowMenu": "Show Menu",
+    "ShowOutput": "Show Output",
+    "HideOutput": "Hide Output",
+    "RefreshOutput": "Refresh Output",
+    "Go": "Go",
+    "Menu": "Menu",
+    "CreateFolder": "Create Folder",
+    "CreateFile": "Create File"
+  },
+  "RegexTester": {
+    "RegularExpressionTester": "Regular Expression Tester",
+    "testPattern": {
+      "label": "Test Pattern",
+      "description": "Example string or log line to test the regular expression against.",
+      "placeholder": "[INFO] 2025-05-25 16:20:01 - This is a test log line."
+    },
+    "testRegex": {
+      "label": "Test Expression",
+      "description": "Expression to match against the test pattern.",
+      "placeholder": "GET .*some/path"
+    },
+    "TestResult": "Test Result",
+    "Test": "Test",
+    "Expression": "Expression",
+    "Result": "Result",
+    "NoMatch": "No Match"
+  },
+  "phrases": {
+    "ToggleSpoilerVisibility": "Click to toggle spoiler visibility.",
+    "EnvironmentVariable": "Environment Variable Name: <code>{variableName}</code>",
+    "VariableDescription": "<span class=\"text-warning\">Notice:</span> This configuration value is derived from an environment variable. Changing the value here will cause the new value to write to the config file, but it will not take affect. The next time you click save it will be replaced. Change the value here by changing the environment variable value, or by removing the variable from the environment.",
+    "ERROR": "ERROR",
+    "LoggingIn": "Logging in...",
+    "LoggedIn": "Logged in!",
+    "Loading": "Loading...",
+    "UpdateBackend": "Update Backend",
+    "BackEndUpdated": "Back-end updated {timeDuration} ago.",
+    "UpdatingBackEnd": "Updating back-end...",
+    "FailedToUpdateBackEnd": "Failed to update back-end: {error}",
+    "TryRefreshingThePage": "Try refreshing the page.",
+    "ConfigurationSavedReloading": "Configuration saved! Reloading client...",
+    "ConfigurationSaved": "Configuration saved {timeDuration} ago!",
+    "SavingConfiguration": "Saving configuration...",
+    "Version": "Version {version}",
+    "Every12Hours": "Every 12 hours",
+    "Every6Hours": "Every 6 hours",
+    "Every3Hours": "Every 3 hours",
+    "EveryDuration": "Every {timeDuration}",
+    "Reloading": "Reloading...",
+    "FailedToReload": "Failed to reload: {error}",
+    "ConfirmReload": "Confirm Reload",
+    "ConfirmReloadBody": "Are you sure you want to reload the client?",
+    "ReloadSuccess": "Reload successful! Client reloaded.",
+    "ReloadCheckTimedOut": "Server reload check timed out after 20 attempts",
+    "ConfirmShutdown": "Confirm Shutdown",
+    "ConfirmShutdownBody": "Are you sure you want to shutdown the client? You will need to restart it from the host it runs on.",
+    "ShutdownSuccess": "Shutdown successful! Client stopped.",
+    "FailedToShutdown": "Failed to shutdown: {error} - Try reloading the page.",
+    "LoginHelp": "Login Help",
+    "LoginHelpBody": "If this is your first time logging in, use your email address and password from notifiarr.com to login. You can set a local password after logging in. If you've forgotten your local password, please see the <a href=\"https://notifiarr.wiki/pages/client/troubleshooting/#forgotten-passwords\" target=\"_blank\">forgotten passwords</a> wiki page.",
+    "Changed": "Changed",
+    "New": "New",
+    "Invalid": "Invalid",
+    "DeleteInstance": "Delete Instance",
+    "DeletedNumber": "Deleted {number}",
+    "ItsGone": "It's gone! Don't forget to save.",
+    "URLMustBeginWithHttp": "URL must begin with http:// or https://",
+    "NameMustNotBeEmpty": "Name must not be empty.",
+    "HostMustNotBeEmpty": "Host must not be empty.",
+    "UsernameMustNotBeEmpty": "Username must not be empty.",
+    "NameInUseByInstance": "This name is in use by instance {number}.",
+    "APIKeyMustBeCountCharacters": "API key must be {count} characters.",
+    "APIKeyMustBeCountCharactersOrLonger": "API key must be {count} characters or longer.",
+    "InvalidAPIKey": "Invalid Notifiarr API key — update it in Configuration.",
+    "TokenMustBeCountCharacters": "Token must be {count} characters or longer.",
+    "LeavePage": "Do you really want to leave this page?",
+    "Landing": {
+      "SelectASection": "Select a section from the navigation menu to get started.",
+      "Welcome": "Welcome, {username}!"
+    },
+    "ShowMore": "Show more information",
+    "ShowPassword": "Show password",
+    "HidePassword": "Hide password",
+    "CheckInstance": "Check instance",
+    "ValidateSSL": "Validate SSL certificate",
+    "RunAsShell": "Run as shell command",
+    "FollowRedirects": "Follow redirects",
+    "BrowseFiles": "Browse files",
+    "APIKey": {
+      "title": "Provide API Key",
+      "placeholder": "Global API key from notifiarr.com",
+      "setMsg": "API key set successfully!",
+      "Setting": "Setting API key...",
+      "description": "The Notifiarr client requires a valid API key to function. This key is used to authenticate with the Notifiarr website to receive updates and to send notifications. The client will not work without it, so please enter your API key below."
+    }
+  },
+  "navigation": {
+    "titles": {
+      "Plex": "Plex Webhooks",
+      "Settings": "Settings",
+      "Insights": "Insights",
+      "Configuration": "Configuration",
+      "SiteTunnel": "Site Tunnel",
+      "StarrApps": "Starr Apps",
+      "Downloaders": "Download Apps",
+      "MediaApps": "Media Apps",
+      "SnapshotApps": "Snapshot Apps",
+      "FileWatcher": "File Watcher",
+      "Endpoints": "Endpoints",
+      "Commands": "Commands",
+      "Services": "Services",
+      "Actions": "Actions",
+      "Integrations": "Integrations",
+      "Monitoring": "Monitoring",
+      "Metrics": "Metrics",
+      "LogFiles": "Log Files",
+      "System": "System",
+      "TrustProfile": "Trust Profile",
+      "Landing": "Notifiarr Home",
+      "UnsavedChanges": "Unsaved Changes",
+      "ApiDocs": "Client API Documentation"
+    },
+    "pageDescription": {
+      "Plex": "Information for troubleshooting Plex webhooks.",
+      "Configuration": "Configure your Notifiarr client settings here.",
+      "SiteTunnel": "This client keeps a persistent websocket connection to notifiarr.com using a <a href=\"https://github.com/golift/mulery\" target=\"_blank\">Mulery tunnel</a>. This tunnel allows the website to make requests to your client without the need for opening a port, or having a static IP. This page allows you to select your primary tunnel and which tunnel you wish to use as backup in case the primary becomes inaccessible.",
+      "StarrApps": "Setup Starr integrations.",
+      "Downloaders": "Manage download clients.",
+      "MediaApps": "Manage media players and related services.",
+      "SnapshotApps": "Most snapshot configurations are on the Notifiarr.com website. Below you will find Application 'plugin' settings for the snapshot feature.",
+      "FileWatcher": "Watch for file changes and trigger actions! This Notifiarr client can watch (log) files for lines matching a regular expression. This is similar to <code>tail -f file | grep string</code> and allows you to send notifications when, for instance, a log file has a new line written that matches a regular expression.",
+      "Endpoints": "Configure relay endpoint URLs and their schedules.",
+      "Commands": "Set up and execute custom commands and scripts.",
+      "Services": "The Notifiarr client application is capable of monitoring services via HTTP checks, TCP port checks or process running (and not running) checks. <b>The client health checks work with the Notifiarr.com Network Integration.</b>",
+      "Actions": "Find internal Notifiarr client actions here. These are executed by timers, schedules, and events from the website or a chat server. While usually reserved for troubleshooting, you may trigger them manually in this interface.",
+      "Integrations": "This page displays data that this client application has cached in memory for the various configured integrations.",
+      "Monitoring": "View service and network health check results.",
+      "Metrics": "View metric totals for client configurations.",
+      "LogFiles": "View, follow, download and upload client log files.",
+      "System": "View system and client information and.",
+      "TrustProfile": "Configure how you log into this Notifiarr client application.",
+      "Landing": "This is the greatest place on Earth!"
+    }
+  },
+  "config": {
+    "errors": {
+      "SetAPIKeyFailed": "Failed to set API key: {error}",
+      "InvalidCreds": "Invalid username or password.",
+      "LoginRequestTimedOut": "Login request timed out",
+      "LoginFailed": "Login failed: {error}",
+      "ProfileReqTimedOut": "Profile request timed out",
+      "AnUnknownErrorOccurred": "An unknown error occurred",
+      "ConfigUpdateFailed": "Configuration update failed: {error}",
+      "PleaseEnterBothUsernameAndPassword": "Please enter both username and password."
+    },
+    "titles": {
+      "Configuration": "Configuration",
+      "General": "General",
+      "Network": "Network",
+      "System": "System",
+      "WatchFile": "Watch File",
+      "Endpoint": "Endpoint",
+      "Command": "Command",
+      "SSLConfiguration": "SSL Configuration",
+      "Services": "Services",
+      "Logging": "Logging",
+      "Dark": "Dark",
+      "Light": "Light"
+    },
+    "apiKey": {
+      "label": "API Key",
+      "description": "API key from your Notifiarr.com account.",
+      "tooltip": "Find this by logging into Notifiarr.com, go to Profile then API Keys.",
+      "placeholder": "Enter your API key here"
+    },
+    "extraKeys": {
+      "label": "Extra Keys",
+      "description": "Additional API keys for third-party integrations. Separate with newlines.",
+      "placeholder": "One per line..."
+    },
+    "bindAddr": {
+      "label": "Bind Address",
+      "description": "IP and port the app will listen on. Use 0.0.0.0 to listen on all interfaces.",
+      "placeholder": "0.0.0.0:5454"
+    },
+    "sslKeyFile": {
+      "label": "SSL Key File",
+      "description": "Path to SSL key file.",
+      "placeholder": "/path/to/ssl-key.pem",
+      "tooltip": "This application can serve HTTPS. Enable that by specifying a certificate file path and key file path."
+    },
+    "sslCertFile": {
+      "label": "SSL Certificate File",
+      "description": "Path to SSL certificate file.",
+      "placeholder": "/path/to/ssl-cert.pem",
+      "tooltip": "This application can serve HTTPS. Enable that by specifying a certificate file path and key file path."
+    },
+    "debug": {
+      "label": "Debug Logging",
+      "description": "Enable or disable debug logging.",
+      "tooltip": "Enabling Debug will write a lot more data to the log. Use Max Body settings to control payloads sizes."
+    },
+    "quiet": {
+      "label": "Quiet Logging",
+      "description": "Enable or disable quiet logging.",
+      "tooltip": "Enabling Quiet makes the app not print anything to stdout. This is useful when a log file is enabled and you don't want logs spewing into a startup daemon too."
+    },
+    "trace": {
+      "label": "Trace Logging",
+      "description": "Enable or disable trace logging.",
+      "tooltip": "Enabling Trace will write very verbose execution flow to the log. Use for deep debugging."
+    },
+    "logFile": {
+      "label": "Application Log File",
+      "description": "Path to the application log file or folder.",
+      "placeholder": "/path/to/notifiarr.log",
+      "tooltip": "If you set a folder without a file name, the application will create a file named Notifiarr.log in the folder."
+    },
+    "httpLog": {
+      "label": "HTTP Log File",
+      "description": "Path to the HTTP log file or folder.",
+      "placeholder": "/path/to/http-notifiarr.log",
+      "tooltip": "Setting a log file path here will make the application write the HTTP logs to a dedicated file. The file format is in apache log. Highly recommended. If you set a folder without a file name, the application will create a file named Notifiarr.http.log in the folder."
+    },
+    "debugLog": {
+      "label": "Debug Log File",
+      "description": "Path to the debug log file or folder.",
+      "placeholder": "/path/to/debug-notifiarr.log",
+      "tooltip": "Setting a log file path here will make the application write the debug logs to a dedicated file. Debug logs are written to the application log file when this is unset. If you set a folder without a file name, the application will create a file named Notifiarr.debug.log in the folder."
+    },
+    "maxBody": {
+      "label": "Max Body Size",
+      "description": "Maximum body size for HTTP requests.",
+      "tooltip": "When debug is enabled, this setting limits the amount of payload data written to the log, to or from Notifiarr.com."
+    },
+    "logFileMb": {
+      "label": "Log File Size",
+      "description": "Maximum size of the log file before rotation.",
+      "tooltip": "When rotation is enabled (setting Max Log File Count higher than 1), this setting controls how large a file must be to trigger rotation."
+    },
+    "logFiles": {
+      "label": "Log File Count",
+      "description": "Number of log files to keep.",
+      "tooltip": "When this setting is 0 or 1, log file rotation is disabled. This setting applies to all log files, and will keep this many of each on disk."
+    },
+    "noUploads": {
+      "label": "Deny Uploads",
+      "description": "<b>Disabled</b> allows Notifiarr.com administrators to make this client upload log files to the website. <b>Enabled</b> prevents log file uploads.",
+      "tooltip": "This setting controls the Notifiarr.com website and Notifiarr administrators' ability to trigger this client to upload log files to the website. Sometimes we need to see log entries while diagnosing problems and this trigger allows us to make the client upload the app and debug log files."
+    },
+    "snapshot": {
+      "timeout": { "label": "Timeout", "description": "Timeout for snapshot operations." }
+    },
+    "services": {
+      "disabled": {
+        "label": "Health Checks",
+        "description": "Enable or disable health checks.",
+        "tooltip": "Disable or enable monitoring for all health checks right here."
+      },
+      "interval": {
+        "label": "Update Interval",
+        "description": "Update interval for health checks.",
+        "tooltip": "This controls how often aggregated health check results are sent to Notifiarr.com. If a health check state changes, it's always sent immediately."
+      },
+      "logFile": {
+        "label": "Services Log File",
+        "description": "Path to the services log file or folder.",
+        "tooltip": "The log file is used to store the health check results. If left unset, the health check output is written to the application log file. If you set a folder without a file name, the application will create a file named Notifiarr.services.log in the folder.",
+        "placeholder": "/path/to/services-notifiarr.log"
+      }
+    },
+    "ui": {
+      "darkMode": { "label": "Dark Mode", "description": "Enable or disable dark mode." },
+      "language": {
+        "label": "Language",
+        "description": "Language of the application frontend."
+      }
+    },
+    "watchFile": {
+      "path": { "label": "File Path", "description": "Path to the file to watch." }
+    },
+    "endpoint": { "name": { "label": "Name", "description": "Name of the endpoint." } },
+    "command": {
+      "name": {
+        "label": "Name",
+        "description": "Name of the command.",
+        "required": "A command is required."
+      }
+    },
+    "service": { "name": { "label": "Name", "description": "Name of the service." } },
+    "urlbase": {
+      "label": "URL Base",
+      "description": "This application serves HTTP on / by default. You can change that by typing in something else here.",
+      "placeholder": "/notifiarr/",
+      "tooltip": "Example: /notifiarr/"
+    },
+    "hostId": {
+      "label": "Host ID",
+      "description": "The Host ID parameter is used to uniquely identify this client installation.",
+      "tooltip": "Changing this value is discouraged; it should be found automatically. Do not copy this value to another Notifiarr client installation."
+    },
+    "serial": {
+      "label": "Parallel Threads",
+      "description": "Disabling this setting will make the application use fewer go routines (threads) when gathering data from configured applications.",
+      "tooltip": "Spreads out CPU usage and lowers memory footprint."
+    },
+    "retries": {
+      "label": "Retries",
+      "description": "Sometimes connections to Notifiarr.com fail. This controls how many times each request will be attempted in case of failures.",
+      "tooltip": "Default: 4 (setting 0 uses default of 4)"
+    },
+    "apt": {
+      "label": "APT Hook",
+      "description": "The Notifiarr Debian (and Ubuntu) packages include an APT integration.",
+      "tooltip": "The Notifiarr Debian (and Ubuntu) packages include an APT integration. This integration invokes every time an <b class=\"text-warning\">apt</b> command is executed. To enable it, set this field to Enabled, and then <b>enable the Package Manager integration on Notifiarr.com.</b> This feature does not require the client to be running; it only requires the client deb package to be installed. This does not work on RHEL or non-Debian Linux."
+    },
+    "timeout": {
+      "label": "Timeout",
+      "description": "This is the timeout for API requests to Notifiarr.com."
+    },
+    "fileMode": {
+      "label": "Log File Unix Mode",
+      "description": "This is the unix file mode used when writing new log files.",
+      "tooltip": "Recommended values in order of openness: 0600, 0640, 0644"
+    },
+    "autoUpdate": {
+      "label": "Auto Update",
+      "description": "This is how often the application will check for updates. When one is found it will be installed automatically.",
+      "tooltip": "This only works on Windows."
+    },
+    "unstableCh": {
+      "label": "Unstable Channel",
+      "description": "Enabling the unstable updates channel will make the application check the unstable website for auto-updates instead of GitHub.",
+      "tooltip": "Only available to users with developer access."
+    }
+  },
+  "profile": {
+    "title": { "Authentication": "Authentication", "Authorization": "Authorization" },
+    "phrase": {
+      "ShowMoreDesc": "Three authentication types are currently supported. Auth Proxy and No Password are only available if the current request comes from a valid, configured upstream IP address.",
+      "PasswordOnlyUsed": "Username and Password are only used if Authentication Type is set to Password.",
+      "HeaderOnlyUsed": "Auth Header is only used if Authentication Type is set to Header or No Password.",
+      "AuthTypeChange": "If Authentication Type changes, log out to complete the process.",
+      "ProfileUpdated": "Profile updated successfully {timeDuration} ago!",
+      "EnterCurrentPassword": "Enter your current password to make changes.",
+      "ProxyAuthDisabled": "Proxy authentication is disabled because your upstream ({upstreamIp}) is not in the allowed upstreams list.",
+      "Addit": "Add it.",
+      "SeeWikiForAuthProxyHelp": "See <a href=\"https://notifiarr.wiki/pages/client/reverseProxy/\" target=\"_blank\">the wiki</a> for instructions setting up an authentication proxy.",
+      "ShowMeMore": "Show me more.",
+      "ShowMeLess": "Show me less."
+    },
+    "authType": {
+      "label": "Authentication Type",
+      "description": "Select how to authenticate with the client",
+      "options": {
+        "password": "Password: Local Username",
+        "header": "Auth Proxy: Header",
+        "website": "Website Credentials",
+        "noauth": "No Password (danger)"
+      },
+      "option_desc": {
+        "password": "This is the default authentication type. Select the Password option to log into this application with a configured username and password. Only 1 username and password is supported. When selecting this option, you must fill in the username and new password fields. If this is the current authentication type you must also fill in the current password field to make changes.",
+        "header": "Select this option to log into this application using an HTTP header that contains a username. This is commonly known as proxy authentication. We have <a href=\"https://notifiarr.wiki/pages/client/reverseProxy/\" target=\"_blank\">a wiki page</a> that provides instructions to configure Nginx for this feature. When selecting this option, you must also select a header for the auth proxy. If no headers are displayed, then no valid headers were provided by the upstream proxy.",
+        "website": "Select this option to log into this application using website credentials. This allows you to log into the client using your email address or username and password from Notifiarr.com. Your password is always safe and encrypted before being transmitted to the client.",
+        "noauth": "This configuration is not recommended. The No Password authentication type allows any request from any configured <code>upstream IP</code>. It also works with an auth proxy to set the username. If no username is in the provided header, then it defaults to admin."
+      }
+    },
+    "upstreams": {
+      "label": "Upstreams",
+      "description": "Trusted proxy IP or CIDR networks. Separate networks with spaces.",
+      "placeholder": "127.0.0.1 ::1",
+      "tooltip": "If Notifiarr client is behind a reverse proxy (swag, nginx, etc), then you should add that proxy's IP here. You can also specify full networks. This controls which IP is written to the web server log file, requester or <span class=\"text-warning\">X-Forwarded-For</span> header. Required when using a request header for authentication, or when authentication is disabled."
+    },
+    "header": {
+      "label": "Auth Header",
+      "description": "Select the header containing your username",
+      "tooltip": "This displays headers that are provided by the client or upstream that may be used for proxy authentication. This selection is used if Authentication Type is set to Header or No Password. Choose the header that displays your proper username. When using No Password, the header is used to set the username, but is not required."
+    },
+    "username": {
+      "label": "Username",
+      "description": "Your login username",
+      "placeholder": "Default: admin"
+    },
+    "password": {
+      "label": "Current Password",
+      "description": "Enter your current password to make changes",
+      "placeholder": "Enter current password"
+    },
+    "newPass": {
+      "label": "New Password",
+      "description": "Your new login password",
+      "placeholder": "9 character minimum"
+    }
+  },
+  "system": {
+    "BuildInformation": {
+      "title": "Build Information",
+      "Branch": "Branch",
+      "BuildUser": "Build User",
+      "BuildDate": "Build Date",
+      "GoVersion": "Go Version",
+      "Integrity": "Integrity"
+    },
+    "OperatingSystem": {
+      "title": "Operating System",
+      "Hostname": "Hostname",
+      "UniqueID": "Unique ID",
+      "Platform": "Platform",
+      "KernelVersion": "Kernel Version",
+      "VirtualizationSystem": "Virtualization System"
+    },
+    "ClientInformation": {
+      "title": "Client Information",
+      "Application": "Application",
+      "Version": "Version",
+      "Started": "Started",
+      "Uptime": "Uptime"
+    },
+    "StorageData": {
+      "title": "Storage Data",
+      "Device": "Device",
+      "Mount": "Mount",
+      "Total": "Total",
+      "Used": "Used",
+      "Free": "Free",
+      "FS": "FS",
+      "ro": "ro"
+    },
+    "NetworkInformation": {
+      "title": "Network Information",
+      "IPAddress": "IP Address",
+      "Gateway": "Gateway",
+      "Netmask": "Netmask",
+      "Interface": "Interface"
+    },
+    "StartupParams": {
+      "title": "Startup Parameters",
+      "BinaryPath": "Binary Path",
+      "ConfigFile": "Config File",
+      "EnvironmentPrefix": "Environment Prefix",
+      "ExtraConfigFiles": "Extra Config Files",
+      "CustomAssets": "Custom Assets",
+      "UserID": "User ID",
+      "GroupID": "Group ID",
+      "IPAddress": "IP Address"
+    },
+    "UserInformation": {
+      "title": "User Information",
+      "Patron": "Patron",
+      "Subscriber": "Subscriber",
+      "AbsoluteBadAss": "Absolute Bad Ass",
+      "YesYesYouAre": "Yes, yes you are! 💚",
+      "HellaAwesome": "Hella Awesome",
+      "YoureSoGifted": "You're so gifted, and we love you! 💜",
+      "DateFormat": "Date Format",
+      "InvalidAPIKey": "Not signed in to Notifiarr; the API key was rejected."
+    },
+    "EnvironmentVariables": { "title": "Environment Variables" }
+  },
+  "MediaApps": {
+    "Plex": {
+      "title": "Plex",
+      "description": "The Plex integration is comprehensive, and many of the settings are configured on the <a href=\"https://notifiarr.com/\" target=\"_blank\">Notifiarr.com website</a>.",
+      "name": {
+        "label": "Server Name",
+        "description": "Name of the Plex server.",
+        "placeholder": "Set automatically by server",
+        "tooltip": "The name of the Plex Media Server is used in notifications, logs and health checks. It is set automatically by the Plex server."
+      },
+      "url": {
+        "label": "URL",
+        "description": "URL of the Plex server.",
+        "placeholder": "http://plex.server.tv:32400"
+      },
+      "token": {
+        "label": "Token",
+        "description": "Token for the Plex server.",
+        "placeholder": "pl3x-to_Ken",
+        "tooltip": "You may find directions for locating your Plex token at <a href=\"https://support.plex.tv/articles/204059436-finding-an-authentication-token-x-plex-token/\" target=\"_blank\">this Plex Article</a>."
+      }
+    },
+    "Tautulli": {
+      "title": "Tautulli",
+      "description": "Tautulli provides a feature that allows you to give your Plex users custom usernames. By integrating Notifiarr client with Tautulli, those custom usernames will be displayed in your chat server notifications. When not enabled, Plex usernames or email addresses are used instead. This is entirely optional. The Notifiarr website also provides this same feature and allows you to map Plex users to custom names. You may also add a Tautulli instance here simply to monitor it with health checks.",
+      "name": {
+        "label": "Tautulli Name",
+        "description": "Name of the Tautulli service."
+      },
+      "url": {
+        "label": "URL",
+        "description": "URL of the Tautulli service.",
+        "placeholder": "http://tautulli.server.tv:8181"
+      },
+      "apiKey": {
+        "label": "API Key",
+        "description": "API key for the Tautulli service.",
+        "placeholder": "tautulli-api-key"
+      }
+    }
+  },
+  "SnapshotApps": {
+    "MySQL": {
+      "title": "MySQL",
+      "description": "You may add MySQL credentials to your Notifiarr client configuration to snapshot MySQL service health. This feature snapshots <code>SHOW PROCESSLIST</code> and <code>SHOW STATUS</code> data. Access to a database is not required. Example Grant: <code>GRANT PROCESS ON *.* to 'notifiarr'@'localhost'</code>",
+      "addInstance": "Add MySQL Server",
+      "name": {
+        "label": "Server Name",
+        "description": "Name of the MySQL server.",
+        "placeholder": "custom name for notifications"
+      },
+      "host": {
+        "label": "Host",
+        "description": "Host or IP address of the MySQL server.",
+        "placeholder": "127.0.0.1"
+      },
+      "port": {
+        "label": "Port",
+        "description": "Port of the MySQL server.",
+        "placeholder": "3306"
+      },
+      "username": {
+        "label": "Username",
+        "description": "Username for the MySQL server.",
+        "placeholder": "root"
+      },
+      "password": {
+        "label": "Password",
+        "description": "Password for the MySQL server.",
+        "placeholder": "password"
+      }
+    },
+    "Nvidia": {
+      "title": "Nvidia",
+      "description": "This integration displays Nvidia GPU info in Snapshot notifications. In Docker, use the CUDA image (<code>ghcr.io/notifiarr/notifiarr:cuda</code> or <code>golift/notifiarr:cuda</code>), install the <a href=\"https://docs.nvidia.com/datacenter/cloud-native/container-toolkit/latest/install-guide.html\" target=\"_blank\" rel=\"noopener\">NVIDIA Container Toolkit</a> on the host, and pass the GPU in with <code>--gpus all</code> or Compose <code>gpus: all</code>. A host CUDA toolkit version is not required.",
+      "disabled": {
+        "label": "GPU Snapshots",
+        "description": "Enable or disable GPU snapshots."
+      },
+      "busIds": {
+        "label": "Bus IDs",
+        "description": "Comma separated list of bus IDs to snapshot.",
+        "placeholder": "0000:00:00.0,0000:00:00.1",
+        "tooltip": "This is the bus ID of the GPU. You can find this by running <code>nvidia-smi</code> and looking at the <code>Bus Id</code> column. Cards with other Bus IDs are ignored in the snapshot. Generally, just leave this blank. Add multiple with newlines."
+      },
+      "smiPath": {
+        "label": "nvidia-smi Path",
+        "description": "Path to the nvidia-smi command.",
+        "placeholder": "/usr/bin/nvidia-smi",
+        "tooltip": "If nvidia-smi (nvidia-smi.exe on Windows) is not in the PATH environment, then you may provide a full path to the binary here."
+      }
+    }
+  },
+  "StarrApps": {
+    "Radarr": {
+      "title": "Radarr",
+      "addInstance": "Add Radarr Instance",
+      "name": {
+        "label": "Instance Name",
+        "description": "Name of the Radarr instance.",
+        "placeholder": "custom name for notifications"
+      },
+      "url": {
+        "label": "URL",
+        "description": "URL of the Radarr instance.",
+        "placeholder": "http://radarr.server.tv:7878"
+      },
+      "apiKey": {
+        "label": "API Key",
+        "description": "API key for the Radarr instance.",
+        "placeholder": "radarr-api-key"
+      },
+      "username": {
+        "label": "Username",
+        "description": "Username for the Radarr instance.",
+        "placeholder": "admin",
+        "tooltip": "You only need a username and password if you want to check database backups since those cannot be downloaded through the API."
+      },
+      "password": {
+        "label": "Password",
+        "description": "Password for the Radarr instance.",
+        "placeholder": "password"
+      }
+    },
+    "Sonarr": {
+      "title": "Sonarr",
+      "addInstance": "Add Sonarr Instance",
+      "name": {
+        "label": "Instance Name",
+        "description": "Name of the Sonarr instance.",
+        "placeholder": "custom name for notifications"
+      },
+      "url": {
+        "label": "URL",
+        "description": "URL of the Sonarr instance.",
+        "placeholder": "http://sonarr.server.tv:8989"
+      },
+      "apiKey": {
+        "label": "API Key",
+        "description": "API key for the Sonarr instance.",
+        "placeholder": "sonarr-api-key"
+      },
+      "username": {
+        "label": "Username",
+        "description": "Username for the Sonarr instance.",
+        "placeholder": "admin",
+        "tooltip": "You only need a username and password if you want to check database backups since those cannot be downloaded through the API."
+      },
+      "password": {
+        "label": "Password",
+        "description": "Password for the Sonarr instance.",
+        "placeholder": "password"
+      }
+    },
+    "Readarr": {
+      "title": "Readarr",
+      "addInstance": "Add Readarr Instance",
+      "name": {
+        "label": "Instance Name",
+        "description": "Name of the Readarr instance.",
+        "placeholder": "custom name for notifications"
+      },
+      "url": {
+        "label": "URL",
+        "description": "URL of the Readarr instance.",
+        "placeholder": "http://readarr.server.tv:8787"
+      },
+      "apiKey": {
+        "label": "API Key",
+        "description": "API key for the Readarr instance.",
+        "placeholder": "readarr-api-key"
+      },
+      "username": {
+        "label": "Username",
+        "description": "Username for the Readarr instance.",
+        "placeholder": "admin",
+        "tooltip": "You only need a username and password if you want to check database backups since those cannot be downloaded through the API."
+      },
+      "password": {
+        "label": "Password",
+        "description": "Password for the Readarr instance.",
+        "placeholder": "password"
+      }
+    },
+    "Lidarr": {
+      "title": "Lidarr",
+      "addInstance": "Add Lidarr Instance",
+      "name": {
+        "label": "Instance Name",
+        "description": "Name of the Lidarr instance.",
+        "placeholder": "custom name for notifications"
+      },
+      "url": {
+        "label": "URL",
+        "description": "URL of the Lidarr instance.",
+        "placeholder": "http://lidarr.server.tv:8686"
+      },
+      "apiKey": {
+        "label": "API Key",
+        "description": "API key for the Lidarr instance.",
+        "placeholder": "lidarr-api-key"
+      },
+      "username": {
+        "label": "Username",
+        "description": "Username for the Lidarr instance.",
+        "placeholder": "admin",
+        "tooltip": "You only need a username and password if you want to check database backups since those cannot be downloaded through the API."
+      },
+      "password": {
+        "label": "Password",
+        "description": "Password for the Lidarr instance.",
+        "placeholder": "password"
+      }
+    },
+    "Prowlarr": {
+      "title": "Prowlarr",
+      "addInstance": "Add Prowlarr Instance",
+      "name": {
+        "label": "Instance Name",
+        "description": "Name of the Prowlarr instance.",
+        "placeholder": "custom name for notifications"
+      },
+      "url": {
+        "label": "URL",
+        "description": "URL of the Prowlarr instance.",
+        "placeholder": "http://prowlarr.server.tv:9696"
+      },
+      "apiKey": {
+        "label": "API Key",
+        "description": "API key for the Prowlarr instance.",
+        "placeholder": "prowlarr-api-key"
+      },
+      "username": {
+        "label": "Username",
+        "description": "Username for the Prowlarr instance.",
+        "placeholder": "admin",
+        "tooltip": "You only need a username and password if you want to check database backups since those cannot be downloaded through the API."
+      },
+      "password": {
+        "label": "Password",
+        "description": "Password for the Prowlarr instance.",
+        "placeholder": "password"
+      }
+    }
+  },
+  "Downloaders": {
+    "Qbittorrent": {
+      "title": "Qbittorrent",
+      "addInstance": "Add Qbittorrent Instance",
+      "name": {
+        "label": "Instance Name",
+        "description": "Name of the Qbittorrent instance.",
+        "placeholder": "custom name for notifications"
+      },
+      "url": {
+        "label": "URL",
+        "description": "URL of the Qbittorrent instance.",
+        "placeholder": "http://qbittorrent.server.tv:8080"
+      },
+      "username": {
+        "label": "Username",
+        "description": "Username for the Qbittorrent instance.",
+        "placeholder": "admin"
+      },
+      "password": {
+        "label": "Password",
+        "description": "Password for the Qbittorrent instance.",
+        "placeholder": "password"
+      }
+    },
+    "Rtorrent": {
+      "title": "Rtorrent",
+      "addInstance": "Add Rtorrent Instance",
+      "name": {
+        "label": "Instance Name",
+        "description": "Name of the Rtorrent instance.",
+        "placeholder": "custom name for notifications"
+      },
+      "url": {
+        "label": "URL",
+        "description": "URL of the Rtorrent instance.",
+        "placeholder": "http://rtorrent.server.tv:8080"
+      },
+      "username": {
+        "label": "Username",
+        "description": "Username for the Rtorrent instance.",
+        "placeholder": "admin"
+      },
+      "password": {
+        "label": "Password",
+        "description": "Password for the Rtorrent instance.",
+        "placeholder": "password"
+      }
+    },
+    "Transmission": {
+      "title": "Transmission",
+      "addInstance": "Add Transmission Instance",
+      "name": {
+        "label": "Instance Name",
+        "description": "Name of the Transmission instance.",
+        "placeholder": "custom name for notifications"
+      },
+      "url": {
+        "label": "URL",
+        "description": "URL of the Transmission instance. It <b>must</b> include the <code>/transmission/rpc</code> suffix.",
+        "placeholder": "http://transmission.server.tv:9091"
+      },
+      "username": {
+        "label": "Username",
+        "description": "Username for the Transmission instance.",
+        "placeholder": "admin"
+      },
+      "password": {
+        "label": "Password",
+        "description": "Password for the Transmission instance.",
+        "placeholder": "password"
+      }
+    },
+    "Deluge": {
+      "title": "Deluge",
+      "addInstance": "Add Deluge Instance",
+      "name": {
+        "label": "Instance Name",
+        "description": "Name of the Deluge instance.",
+        "placeholder": "custom name for notifications"
+      },
+      "url": {
+        "label": "URL",
+        "description": "URL of the Deluge instance.",
+        "placeholder": "http://deluge.server.tv:8112"
+      },
+      "password": {
+        "label": "Password",
+        "description": "Password for the Deluge instance.",
+        "placeholder": "password"
+      }
+    },
+    "SabNZB": {
+      "title": "SabNZB",
+      "addInstance": "Add SabNZB Instance",
+      "name": {
+        "label": "Instance Name",
+        "description": "Name of the SabNZB instance.",
+        "placeholder": "custom name for notifications"
+      },
+      "url": {
+        "label": "URL",
+        "description": "URL of the SabNZB instance.",
+        "placeholder": "http://sabnzb.server.tv:8080"
+      },
+      "apiKey": {
+        "label": "API Key",
+        "description": "API key for the SabNZB instance.",
+        "placeholder": "sabnzb-api-key"
+      }
+    },
+    "NZBGet": {
+      "title": "NZBGet",
+      "addInstance": "Add NZBGet Instance",
+      "name": {
+        "label": "Instance Name",
+        "description": "Name of the NZBGet instance.",
+        "placeholder": "custom name for notifications"
+      },
+      "url": {
+        "label": "URL",
+        "description": "URL of the NZBGet instance.",
+        "placeholder": "http://nzbget.server.tv:6789"
+      },
+      "username": {
+        "label": "Username",
+        "description": "Username for the NZBGet instance.",
+        "placeholder": "admin"
+      },
+      "password": {
+        "label": "Password",
+        "description": "Password for the NZBGet instance.",
+        "placeholder": "password"
+      }
+    }
+  },
+  "SiteTunnel": {
+    "subText": "Click the <span class=\"text-success\">Ping Tunnels</span> button, and select the tunnel with the fastest response time as your primary. Select another fast tunnel as backup.",
+    "phrases": {
+      "PrimaryTunnel": "Primary Tunnel",
+      "BackupTunnel": "Backup Tunnel",
+      "Ping": "Ping Tunnels",
+      "Pinging": "Pinging ...",
+      "ActiveTunnel": "Active Tunnel: {tunnel}",
+      "TunnelStats": "Tunnel Stats",
+      "Disconnects": "Disconnects",
+      "ConnectionPoolSize": "Connection Pool Size",
+      "Connecting": "Connecting",
+      "Idle": "Idle",
+      "Running": "Running",
+      "LastConnection": "Last Connection",
+      "LastActiveCheck": "Last Active Check",
+      "SocketURLActive": "Socket URL (active)",
+      "SocketURLInactive": "Socket URL (inactive)",
+      "SelectTunnel": "Select a tunnel",
+      "TunnelsSaved": "Tunnels saved {timeDuration} ago!",
+      "TunnelStatsStale": "The data above is always stale. To update it, click the update backend link in the page header."
+    }
+  },
+  "FileWatcher": {
+    "title": "Watched Files",
+    "description": "You must enable the Log Watcher feature and choose a channel on the Notifiarr website for this to work!",
+    "addInstance": "Watch Another File",
+    "DeleteWatcher": "Delete Watcher",
+    "badges": {
+      "CurrentlyWatching": "Currently Watching",
+      "WatcherStopped": "Watcher Stopped"
+    },
+    "buttons": { "StopWatcher": "Stop Watcher", "StartWatcher": "Start Watcher" },
+    "titles": {
+      "RegularExpressionTester": "Regular Expression Tester",
+      "Expression": "Expression",
+      "TestString": "Test String"
+    },
+    "path": {
+      "label": "File Path",
+      "description": "Path to the file to watch. Recommend absolute path names.",
+      "placeholder": "/var/log/nginx/access.log",
+      "required": "Path is required",
+      "clientLog": "Cannot watch the client's own log file; that would loop. Client errors are already sent as client_error_log."
+    },
+    "disabled": { "label": "Active", "description": "Disable this watcher." },
+    "regex": {
+      "label": "Regular Expression",
+      "description": "Regex to match against the file.",
+      "tooltip": "Expressions are automatically wrapped in a wildcard matcher: <code>.*</code> so do not use <code>^</code> or <code>$</code> in your expression. Use <code>(?i)</code> as a prefix to make regular expressions case insensitive.",
+      "placeholder": "GET.*some/path",
+      "required": "Regex is required"
+    },
+    "skip": {
+      "label": "Skip Expressions",
+      "description": "Anything matching this expression is ignored.",
+      "placeholder": "GET.*some/path"
+    },
+    "poll": {
+      "label": "File Polling",
+      "description": "Poll file for changes.",
+      "tooltip": "File system events do not work on some systems. If nothing is being matched, turn this on to enable the file poller interval."
+    },
+    "pipe": {
+      "label": "FIFO Pipe",
+      "description": "Path is a named FIFO pipe.",
+      "tooltip": "Enable this if the file you're watching is a named FIFO pipe. You probably don't need this."
+    },
+    "mustExist": {
+      "label": "File Must Exist",
+      "description": "Skip watching file if it's missing.",
+      "tooltip": "Enabling this will skip watching the file if it does not exist when the application starts. Watching files that do not exist is still buggy and may not work at all."
+    },
+    "logMatch": {
+      "label": "Log Matches",
+      "description": "Write matched lines to notifiarr log.",
+      "tooltip": "Enabling this will write the matched line to the notifiarr log. This is good for debugging, but may be noisy."
+    }
+  },
+  "Commands": {
+    "title": "Command List",
+    "addInstance": "Create Command",
+    "DeleteCommand": "Delete Command",
+    "description": "Commands are executed by the client (the backend). They can be triggered from this interface or from a chat server. If you modify a command you must save the configuration before you can run it from the Web UI.",
+    "Executions": "Executions: {count}",
+    "Failures": "Failures: {count}",
+    "LastExecution": "Last Execution",
+    "neverExecuted": "never executed",
+    "enterCommandArguments": "Enter Command Arguments",
+    "commandRequiresArguments": "This command requires {count, plural, =1 {one argument. Enter it below.} other {# arguments. Enter them below.}}",
+    "noOutput": "No output yet. Try executing the command then click refresh.",
+    "refreshed": "refreshed {timeDuration} ago",
+    "regexMismatch": "Argument does not match regular expression.",
+    "name": {
+      "label": "Name",
+      "description": "Name of the command. Shows up in the log and in notifications.",
+      "placeholder": "custom name for notifications"
+    },
+    "command": {
+      "label": "Command",
+      "description": "Command to run.",
+      "required": "Command is required",
+      "placeholder": "echo 'Hello, world!'",
+      "tooltip": "This is the command that will execute when triggered.<br />Click the double-check icon to run the command right now. After it finishes, click refresh and show output to see the results.<br /><br />Check the box to wrap the command in a shell. On Windows, this will run the command with <code>cmd.exe</code> and on other operating systems, it will run the command with <code>/bin/bash</code>. This is useful for commands that require shell features like pipes and redirects. Custom positional arguments may be defined with this format: <code>({regex})</code> - that is a regular expression wrapped in curly braces and parentheses, ie. <code>({[a-z]})</code>. These arguments may be filled in by the person running the command; either in this Web UI or on your chat server. If a command has an argument, it is required; if it has multiple arguments, they're all required.<br /><br /> <h5>Examples</h5>Command using two arguments: <code>/bin/ls ({-la|-l|-a|-al}) ({/tmp|/|/home|/lib})</code><br />The above command will allow a user to do any combination of <code>ls -la</code> on either <code>/tmp</code>, <code>/</code>, <code>/home</code>, or <code>/lib</code>."
+    },
+    "notify": {
+      "label": "Notify",
+      "description": "Send notification after command is executed.",
+      "tooltip": "Receive a notification containing the command output."
+    },
+    "log": {
+      "label": "Log Output",
+      "description": "Log command output.",
+      "tooltip": "Log the command output to this client's application log."
+    },
+    "timeout": {
+      "label": "Maximum Run Duration",
+      "description": "How long the command may run before termination."
+    }
+  },
+  "scheduler": {
+    "title": "Schedule",
+    "daysOfWeek": "Days of week",
+    "daysOfMonth": "Days of month",
+    "frequency": "Frequency",
+    "selectAFrequency": "Select a frequency to create a schedule.",
+    "AddATime": "Add a time",
+    "empty": "If you want to run every day, select the Daily Frequency.",
+    "required": {
+      "daysOfWeek": "Must select at least one day of the week.",
+      "daysOfMonth": "Must select at least one day of the month.",
+      "atTimes": "Must select at least one time to run the schedule."
+    },
+    "ops": {
+      "noSchedule": "No Schedule",
+      "minutely": "Minutely",
+      "hourly": "Hourly",
+      "daily": "Daily",
+      "weekly": "Weekly",
+      "monthly": "Monthly"
+    },
+    "times": {
+      "noneSelected": "(none selected)",
+      "noDaysSelected": "(no days selected)",
+      "everyMinute": "{count, plural, =1 {One time} other {# times}} every minute at seconds {times}",
+      "everyHour": "{count, plural, =1 {One time} other {# times}} every hour at minute:seconds {times}",
+      "everyDay": "{count, plural, =1 {One time} other {# times}} every day at times {times}",
+      "everyWeek": "{count, plural, =1 {One time} other {# times}} every week on {daysOfWeek} at times {times}",
+      "everyMonth": "{count, plural, =1 {One time} other {# times}} every month on days {daysOfMonth} at times {times}"
+    }
+  },
+  "Endpoints": {
+    "title": "Relay URLs",
+    "addInstance": "Add Relay URL",
+    "DeleteEndpoint": "Delete URL",
+    "badge": {
+      "header": "{count, plural, =1 {1 header} other {# headers}}",
+      "query": "{count, plural, =1 {1 query} other {# queries}}",
+      "body": "{count, plural, =1 {1 character} other {# characters}}"
+    },
+    "name": {
+      "label": "Name",
+      "description": "Name of the relay URL.",
+      "placeholder": "custom name for notifications"
+    },
+    "template": {
+      "label": "Payload Template",
+      "description": "Parse payload into this template.",
+      "placeholder": "pihole",
+      "tooltip": "The template is used by the website to figure out how to turn the payload into a chat notification. Find a list of available templates or create your own on <a href=\"https://notifiarr.com/\" target=\"_blank\">the website</a> @ <code>Integrations: Endpoints</code>.",
+      "required": "A template is required. Enter 'test' if you are not sure what to enter."
+    },
+    "timeout": {
+      "label": "Request Timeout",
+      "description": "How long to wait for the HTTP request to complete."
+    },
+    "method": { "label": "Method", "description": "HTTP Request" },
+    "url": {
+      "label": "Relay URL",
+      "description": "URL for remote service that gets relayed to the website.",
+      "placeholder": "https://pihole.myhome.lan/api/stats"
+    },
+    "header": {
+      "label": "HTTP Headers",
+      "description": "HTTP Request Headers, 1 per line.",
+      "placeholder": "Content-Type: application/json",
+      "tooltip": "The HTTP request headers are sent to the URL as is. The format must be <code>key: value</code> per line. The space and colon are required. Invalid values are ignored and extra spaces are trimmed."
+    },
+    "query": {
+      "label": "Query Parameters",
+      "description": "Query parameters to add to the URL, 1 per line.",
+      "placeholder": "apiKey=1234567890",
+      "tooltip": "The query parameters are appended to the URL. The format must be <code>key=value</code> per line. Invalid values are ignored and extra spaces are trimmed. Do not include the <code>?</code> character or ampersand (<code>&</code>) at the beginning of a line. Keys and values are automatically URL encoded."
+    },
+    "body": {
+      "label": "Request Body",
+      "description": "The body sent to the URL for POST, PUT and PATCH requests.",
+      "placeholder": "{\"message\": \"Hello, world!\"}"
+    }
+  },
+  "metrics": {
+    "CountersReset": "The counters on this page reset when the application exits. The application exposes these counters via Prometheus. You may scrape them and use the <a href=\"https://grafana.com/grafana/dashboards/24776-notifiarr-client/\" target=\"_blank\">Notifiarr Client Grafana dashboard</a> to visualize them.",
+    "ApplicationUptime": "Application Uptime: &nbsp;<b>{timeDuration}</b>",
+    "logFiles": {
+      "title": "Log Files",
+      "description": "Log file counters.",
+      "empty": "No log files found."
+    },
+    "apiHits": {
+      "title": "API Requests",
+      "description": "Incoming API request counters.",
+      "empty": "No API requests yet."
+    },
+    "httpRequests": {
+      "title": "HTTP Requests",
+      "description": "Incoming HTTP request statistics. This includes websocket tunnel requests.",
+      "empty": "No HTTP requests yet."
+    },
+    "website": {
+      "title": "Website Requests",
+      "description": "Requests to Notifiarr.com.",
+      "empty": "No website requests yet."
+    },
+    "fileWatcher": {
+      "title": "File Watcher",
+      "description": "File watcher statistics.",
+      "empty": "No file watchers configured."
+    },
+    "apps": {
+      "title": "Application Requests",
+      "description": "Application request statistics. These counters do not include health checks.",
+      "empty": "No application requests yet."
+    },
+    "timerEvents": {
+      "title": "Triggered Actions",
+      "description": "Triggers, timers and schedules executed.",
+      "empty": "No triggered actions yet."
+    }
+  },
+  "monitoring": {
+    "ConfigureServices": "Health checks for configured integrations are enabled by giving them a check interval on their respective configuration pages. Some of these checks are from the <go-to page=\"starrapps\">Starr Apps</go-to> page, or the <go-to page=\"downloaders\">Download Apps</go-to> page, or the <go-to page=\"mediaapps\">Media Apps</go-to> page. The rest of the health checks displayed can be found on the <go-to page=\"services\">Services page</go-to>.",
+    "ChecksDisabled": "Health Checks: Disabled",
+    "ChecksStopped": "Health Checks: Paused",
+    "EnableOnConfig": "Enable health checks on the <go-to page=\"services\">Services</go-to> page.",
+    "StartChecks": "Resume Health Checks",
+    "StopChecks": "Pause Health Checks",
+    "stopFailed": "Failed to pause health checks.",
+    "startFailed": "Failed to resume health checks.",
+    "recheckFailed": "Failed to recheck health check.",
+    "checkInitiated": "Health check initiated.",
+    "nextRefresh": "Next refresh in {timeDuration}.",
+    "refreshInterval": "Refresh Interval",
+    "cardsView": "Cards View",
+    "classicView": "Classic View",
+    "hideAllOutputs": "Hide All Outputs",
+    "showAllOutputs": "Show All Outputs",
+    "check": {
+      "name": "Service Name",
+      "state": { "short": "State", "title": "Service Check Counters" },
+      "typeExpect": "Type/Expect",
+      "last": {
+        "short": "Last",
+        "title": "Last Check: {timeDuration} ago",
+        "tooltip": "How long ago this service was checked.",
+        "description": "Service last checked at"
+      },
+      "since": {
+        "short": "Since",
+        "title": "Time in state: {timeDuration}",
+        "tooltip": "How long the service has been in this state.",
+        "description": "Service has been in this state since"
+      },
+      "interval": {
+        "short": "Interval",
+        "title": "Check Interval",
+        "tooltip": "How often this service is checked."
+      },
+      "output": "Last Check Output"
+    }
+  },
+  "ServiceChecks": {
+    "title": "Health Checks",
+    "DeleteCheck": "Delete Health Check",
+    "addInstance": "Create Health Check",
+    "description": "Use this form to configure health checks. Do not add starr, media, snapshot, or downloader apps here. Give them a check interval on their respective configuration pages instead. View the <go-to page=\"ProcessList\">running process list here</go-to>, and use it for inspiration when creating process checks.",
+    "processListLink": "View the running process list here.",
+    "timeout": {
+      "label": "Check Timeout",
+      "description": "How long to wait for the service check to complete."
+    },
+    "interval": {
+      "label": "Check Interval",
+      "description": "How often to check the service."
+    },
+    "name": {
+      "label": "Check Name",
+      "description": "Unique name for the service being monitored.",
+      "placeholder": "custom name for notifications",
+      "tooltip": "The name of the service being monitored. This is used to identify the service in notifications. Each service must have a unique name."
+    },
+    "type": {
+      "label": "Check Type",
+      "description": "The type of check to perform.",
+      "tooltip": "The Process check type allows you to monitor that a process is running. The HTTP URL check type allows you to monitor a URL for reachability. The TCP Port check type allows you to monitor a TCP port's connectivity. Both Ping check types allow monitoring an IP or host for reachability.",
+      "options": {
+        "process": "Process Check",
+        "http": "HTTP URL Check",
+        "tcp": "TCP Port Reachability",
+        "ping": "UDP Ping Check",
+        "icmp": "ICMP Ping Check"
+      }
+    },
+    "url": {
+      "label": "URL",
+      "description": "URL of the service being monitored.",
+      "placeholder": "https://my.site"
+    },
+    "http": {
+      "headers": {
+        "label": "HTTP Headers",
+        "description": "HTTP request headers, 1 per line.",
+        "placeholder": "Content-Type: application/json"
+      },
+      "codes": {
+        "label": "Acceptable Response Codes",
+        "description": "Any code here is considered acceptable. If the service responds with another code a notification is generated.",
+        "required": "At least one expected response code is required."
+      }
+    },
+    "tcp": {
+      "value": {
+        "label": "Host and Port",
+        "description": "Enter host:port or host:ip to check connectivity.",
+        "placeholder": "127.0.0.1:22",
+        "tooltip": "An IP address is generally recommended. If you also want to test DNS, use a hostname. The format is <code>host:port</code>. There should be no spaces or extra characters.",
+        "required": "A host and port separated with a colon are required."
+      }
+    },
+    "ping": {
+      "value": {
+        "label": "Host or IP",
+        "description": "Enter host or ip to check reachability.",
+        "placeholder": "127.0.0.1",
+        "tooltip": "An IP address is generally recommended. If you also want to test DNS, use a hostname. The format is <code>host</code> or <code>10.11.12.13</code>. There should be no spaces or extra characters. To allow UDP checks to work on Linux, you must enable them with this command: <code>sudo sysctl -w net.ipv4.ping_group_range=\"0 2147483647\"</code>. To allow ICMP checks in Linux, you must give the notifiarr binary capabilities with this command: <code>sudo setcap cap_net_raw=+ep /usr/bin/notifiarr</code>. Easiest way to make both work in Docker is to enable privileged mode, but you may set capabilities too.",
+        "required": "A host or IP address is required."
+      },
+      "count": {
+        "label": "Count",
+        "description": "Number of packets to send.",
+        "placeholder": "10",
+        "required": "A count of packets greater than zero is required."
+      },
+      "minimum": {
+        "label": "Minimum",
+        "description": "Minimum number of packets that must be received.",
+        "placeholder": "10",
+        "required": "A minimum number of packets greater than zero is required."
+      },
+      "interval": {
+        "label": "Interval",
+        "description": "Interval in milliseconds between packets.",
+        "placeholder": "100"
+      }
+    },
+    "process": {
+      "value": {
+        "label": "Process Match",
+        "description": "The name of the process to check.",
+        "placeholder": "notifiarr",
+        "tooltip": "The name of the process to check. This is the name of the process as it appears in the process list. A wildcard string match is used on both ends of the value provided, so the more specific your arguments the better the match will be.",
+        "required": "A process name is required."
+      },
+      "running": {
+        "label": "Running",
+        "description": "Send an alert if the process is running.",
+        "tooltip": "Selecting this will trigger an unhealthy alert if the process is found running. Select this option if you need a notification when the process starts."
+      },
+      "restarts": {
+        "label": "Restarts",
+        "description": "Send an alert if the process has restarted.",
+        "tooltip": "Selecting this will trigger an unhealthy alert if the process is found to have restarted. Select this option if you need a notification when the PID changes."
+      },
+      "minimum": {
+        "label": "Minimum",
+        "description": "Minimum number of running processes that must match the value.",
+        "required": "A minimum number of processes greater than zero is required.",
+        "tooltip": "If you enter 2, then you will receive a notification if there are fewer than 2 processes running. Use this to be alerted if there are too few processes running."
+      },
+      "maximum": {
+        "label": "Maximum",
+        "description": "Maximum number of running processes that may match the value.",
+        "tooltip": "If you enter 2, then you will receive a notification if there are more than 2 processes running. Use this to be alerted if there are too many processes running."
+      }
+    }
+  },
+  "Actions": {
+    "titles": {
+      "Triggers": "Triggers",
+      "Timers": "Timers",
+      "Schedules": "Schedules",
+      "Trigger": "Trigger",
+      "Timer": "Timer",
+      "SiteCrons": "Website Timers",
+      "Counter": "Counter",
+      "Interval": "Interval",
+      "Schedule": "Schedule",
+      "Type": "Type",
+      "When": "When",
+      "Action": "Action",
+      "Never": "Never",
+      "Filter": "Filter"
+    },
+    "descriptions": {
+      "Triggers": "These actions have no timer and no schedule.",
+      "Timers": "These actions have a timer.",
+      "Schedules": "These actions have a schedule.",
+      "SiteCrons": "These actions are created by the website to offload timer tracking."
+    },
+    "triggers": {
+      "TrigPlexEmptyTrash": { "label": "Empty Plex trash" },
+      "TrigUploadFile": {
+        "label": "Log file uploaded to website",
+        "button": "Upload Log Now",
+        "success": "Log file uploaded to website.",
+        "options": {
+          "choose": "Choose a file to upload.",
+          "app": "Application log file.",
+          "debug": "Debug log file.",
+          "http": "HTTP log file."
+        }
+      },
+      "TrigPlexSessions": {
+        "label": "Collect Plex sessions",
+        "button": "Collect sessions now",
+        "success": "Plex sessions collected."
+      },
+      "TrigPlexSessionsCheck": { "label": "Check for finished Plex sessions" },
+      "TrigDashboard": {
+        "label": "Dashboard update",
+        "button": "Update dashboard",
+        "success": "Dashboard update started."
+      },
+      "TrigMDBListSync": {
+        "label": "MDB list sync",
+        "button": "Sync MDB list",
+        "success": "MDB list sync initiated."
+      },
+      "TrigCollectionGaps": {
+        "label": "Collection gaps",
+        "button": "Check collection gaps",
+        "success": "Collection gaps check initiated."
+      },
+      "TrigCFSyncLidarr": {
+        "label": "Lidarr profile and format sync",
+        "button": "Sync all Lidarr instances",
+        "success": "Lidarr profile and format sync initiated."
+      },
+      "TrigCFSyncRadarr": {
+        "label": "Radarr profile and format sync",
+        "button": "Sync all Radarr instances",
+        "success": "Radarr profile and format sync initiated."
+      },
+      "TrigCFSyncSonarr": {
+        "label": "Sonarr profile and format sync",
+        "button": "Sync all Sonarr instances",
+        "success": "Sonarr profile and format sync initiated."
+      },
+      "TrigStop": { "label": "Client reloads", "button": "Reload client" },
+      "TrigSnapshot": {
+        "label": "Snapshot collection",
+        "button": "Update snapshot",
+        "success": "Snapshot collection started."
+      },
+      "TrigProwlarrCorrupt": {
+        "label": "Prowlarr database corruption",
+        "button": "Check Prowlarr",
+        "success": "Prowlarr database corruption check initiated."
+      },
+      "TrigLidarrCorrupt": {
+        "label": "Lidarr database corruption",
+        "button": "Check Lidarr",
+        "success": "Lidarr database corruption check initiated."
+      },
+      "TrigRadarrCorrupt": {
+        "label": "Radarr database corruption",
+        "button": "Check Radarr",
+        "success": "Radarr database corruption check initiated."
+      },
+      "TrigReadarrCorrupt": {
+        "label": "Readarr database corruption",
+        "button": "Check Readarr",
+        "success": "Readarr database corruption check initiated."
+      },
+      "TrigSonarrCorrupt": {
+        "label": "Sonarr database corruption",
+        "button": "Check Sonarr",
+        "success": "Sonarr database corruption check initiated."
+      },
+      "TrigProwlarrBackup": {
+        "label": "Prowlarr database backups",
+        "button": "Check Prowlarr",
+        "success": "Prowlarr database backups check initiated."
+      },
+      "TrigLidarrBackup": {
+        "label": "Lidarr database backups",
+        "button": "Check Lidarr",
+        "success": "Lidarr database backups check initiated."
+      },
+      "TrigRadarrBackup": {
+        "label": "Radarr database backups",
+        "button": "Check Radarr",
+        "success": "Radarr database backups check initiated."
+      },
+      "TrigReadarrBackup": {
+        "label": "Readarr database backups",
+        "button": "Check Readarr",
+        "success": "Readarr database backups check initiated."
+      },
+      "TrigSonarrBackup": {
+        "label": "Sonarr database backups",
+        "button": "Check Sonarr",
+        "success": "Sonarr database backups check initiated."
+      },
+      "TrigUpCheck": { "label": "Client to website up-check" },
+      "TrigEndpointURL": {
+        "label": "Endpoint URL relayed to website: {name}",
+        "button": "Run Endpoint",
+        "success": "Endpoint URL relayed initiated."
+      },
+      "TrigCustomCommand": {
+        "label": "Custom command: {name}",
+        "button": "Run Command",
+        "success": "Custom command initiated."
+      },
+      "TrigAutoUpdate": { "label": "Auto-update update check" },
+      "TrigCFSyncLidarrInt": { "label": "Lidarr custom format sync per instance" },
+      "TrigCFSyncRadarrInt": { "label": "Radarr custom format sync per instance" },
+      "TrigCFSyncSonarrInt": { "label": "Sonarr custom format sync per instance" },
+      "TrigCustomCronTimer": {
+        "label": "Website timer: {name}",
+        "button": "Run Timer Now",
+        "success": "Website timer initiated."
+      },
+      "TrigDownloadingItems": { "label": "Downloading / finished items" },
+      "TrigLidarrQueue": { "label": "Lidarr queue cacher" },
+      "TrigRadarrQueue": { "label": "Radarr queue cacher" },
+      "TrigReadarrQueue": { "label": "Readarr queue cacher" },
+      "TrigSonarrQueue": { "label": "Sonarr queue cacher" },
+      "TrigStuckItems": {
+        "label": "Stuck items check",
+        "button": "Check for stuck items",
+        "success": "Stuck items check initiated."
+      },
+      "TrigPollSite": { "label": "Site poller" }
+    }
+  },
+  "LogFiles": {
+    "titles": {
+      "Name": "File Name",
+      "Age": "Age",
+      "Bytes": "Bytes",
+      "InUse": "In Use",
+      "Mode": "Mode",
+      "Owner": "Owner",
+      "Path": "Path",
+      "Date": "Date",
+      "FileList": "File List",
+      "Details": "Details",
+      "FileContent": "File Content",
+      "FollowingFile": "Following File",
+      "LineCount": "Line Count",
+      "OpenFile": "Open File {fileName}",
+      "TailFile": "Follow File {fileName}",
+      "Tailing": "Following"
+    },
+    "button": {
+      "download": "Download",
+      "upload": "Upload",
+      "delete": "Delete",
+      "add": "Add",
+      "reload": "Reload",
+      "tooltip": "The <b>Download</b> button downloads the file to your computer. The <b>Upload</b> button uploads the file to the Notifiarr.com server. Only administrators can see uploaded files. The <b>Delete</b> button deletes the file from your hard drive. Files that are in use cannot be deleted. In use means this application is currently writing log entries to it."
+    },
+    "Error": "Error loading log file: {error}",
+    "DeleteFile": "Delete {filePath}",
+    "deleteConfirm": "Are you sure you want to delete this file? This action cannot be undone.",
+    "deleteError": "Error deleting log file: {error}",
+    "deleteSuccess": "Log file deleted: {file}",
+    "uploadError": "Error uploading log file: {error}",
+    "uploadSuccess": "Log file uploading: {file}",
+    "NoFileSelected": "No file selected.",
+    "SelectFile": "Select a file to see what's in it!",
+    "FilesInDirs": "{fileCount} files in {dirCount} dirs",
+    "ToggleLinesOrder": "Toggle lines order",
+    "ToggleColors": "Toggle default colors",
+    "AddMoreLines": "Add more lines",
+    "Reload": "Reload log file",
+    "Highlight": "Highlight",
+    "ToggleLineWrap": "Toggle Line Wrap",
+    "FollowTooltip": "The buttons in this column actively follow a file as it's being written to.",
+    "Tooltip": "<ol><li>The first orange button on the left toggles the order of the lines in the file. By default it's ordered descending in the order it's written. Clicking the button reverses the file and makes it backward. This works well when following a file that's being written to.</li><li>The second purple button toggles the built-in line highlight colors. It also spins when things are happening.</li><li>The number input indicates how many lines to load or add. When following a file, the number limits how many lines are displayed.</li><li>Clicking the Add button adds the number of lines to the top of the file using the existing line count as the offset. The Add button is disabled on in-use files because it's impossible to know how many lines were written since the last update. When following in-use files, the Add button is replaced by an indicator.</li><li>Clicking the Reload button reloads the number of lines from the end of the file.</li><li>Use the highlight input to make specific text stand out.</li><li>The last button toggles line wrapping.</li></ol>"
+  },
+  "Nodal": {
+    "button": {
+      "refresh": "Refresh Page Data",
+      "fullscreen": "Toggle Fullscreen",
+      "raw": "Toggle Raw Data"
+    },
+    "noResponse": "No response data."
+  },
+  "ProcessList": {
+    "title": "Running Process List",
+    "error": "Error loading process list: {error}",
+    "noData": "No process list returned.",
+    "footer": "{count} processes found.",
+    "button": { "wrapOn": "Turn Line Wrap On", "wrapOff": "Turn Line Wrap Off" }
+  },
+  "ClientInfo": {
+    "title": "Startup Payload",
+    "error": "Error loading startup payload: {error}",
+    "noData": "No startup payload returned.",
+    "description": "This is the payload that was sent to the client from Notifiarr.com when it started. It contains the client's configuration and other information."
+  },
+  "Integrations": {
+    "titles": {
+      "Size": "Size",
+      "DashboardAge": "Dashboard Age",
+      "CacheAge": "Cache Age",
+      "StatusAge": "Status Age",
+      "Version": "Version",
+      "Branch": "Branch",
+      "BuildTime": "Build Time"
+    },
+    "DriveData": {
+      "title": "Drive Data",
+      "driveInformation": { "title": "Drive Information" },
+      "mdStatRaid": { "title": "MDStat Raid" },
+      "titles": {
+        "Drive": "Drive",
+        "Temp": "Temp",
+        "Health": "Health",
+        "Age": "Age",
+        "Setting": "Setting",
+        "Value": "Value"
+      }
+    },
+    "Snapshot": {
+      "title": "Raw Snapshot Data",
+      "Age": "Snapshot Age",
+      "Data": "Snapshot Data",
+      "Latest": "Latest Snapshot",
+      "System": "System Snapshot",
+      "titles": {
+        "CPUPercent": "CPU Percent",
+        "MemoryFree": "Memory Free",
+        "MemoryUsed": "Memory Used",
+        "MemoryTotal": "Memory Total",
+        "UserCPUTime": "User CPU Time",
+        "SystemCPUTime": "System CPU Time",
+        "IdleCPUTime": "Idle CPU Time",
+        "NvidiaGPUs": "Nvidia GPUs",
+        "MySQLServers": "MySQL Servers",
+        "IPMISensors": "IPMI Sensors",
+        "Synology": "Synology",
+        "RaidConfigs": "Raid Configs",
+        "ZFSPools": "ZFS Pools",
+        "Processes": "Processes",
+        "DriveTemps": "Drive Temps",
+        "DriveHealth": "Drive Health",
+        "DiskUsage": "Disk Usage",
+        "DiskQuotas": "Disk Quotas",
+        "IOTop": "IO Top",
+        "IOStat": "IO Stat",
+        "IOStat2": "IO Stat 2"
+      }
+    },
+    "starrTitles": {
+      "QueueAge": "Queue Age",
+      "QueueSize": "Queue Size",
+      "Elapsed": "Elapsed",
+      "Shows": "Shows",
+      "Episodes": "Episodes",
+      "Movies": "Movies",
+      "Books": "Books",
+      "Editions": "Editions",
+      "Tracks": "Tracks",
+      "Artists": "Artists",
+      "OnDisk": "On Disk",
+      "Missing": "Missing"
+    },
+    "downloadTitles": {
+      "Downloads": "Downloads",
+      "Incomplete": "Incomplete",
+      "Downloading": "Downloading",
+      "Paused": "Paused",
+      "TotalSize": "Total Size",
+      "Errors": "Errors",
+      "Downloaded": "Downloaded",
+      "Uploading": "Uploading",
+      "Uploaded": "Uploaded",
+      "Seeding": "Seeding",
+      "Month": "Month",
+      "Week": "Week",
+      "Day": "Day"
+    },
+    "lidarrDashboard": { "title": "Raw Lidarr Dashboard" },
+    "radarrDashboard": { "title": "Raw Radarr Dashboard" },
+    "readarrDashboard": { "title": "Raw Readarr Dashboard" },
+    "sonarrDashboard": { "title": "Raw Sonarr Dashboard" },
+    "delugeDashboard": { "title": "Raw Deluge Dashboard" },
+    "nzbgetDashboard": { "title": "Raw NZBGet Dashboard" },
+    "qbitDashboard": { "title": "Raw QBit Dashboard" },
+    "rtorrentDashboard": { "title": "Raw rTorrent Dashboard" },
+    "transmissionDashboard": { "title": "Raw Transmission Dashboard" },
+    "sabnzbdDashboard": { "title": "Raw SabNZBD Dashboard" },
+    "sonarrQueue": { "title": "Raw Sonarr Queue" },
+    "radarrQueue": { "title": "Raw Radarr Queue" },
+    "readarrQueue": { "title": "Raw Readarr Queue" },
+    "lidarrQueue": { "title": "Raw Lidarr Queue" },
+    "prowlarrStatus": { "title": "Raw Prowlarr Info" },
+    "radarrStatus": { "title": "Raw Radarr Info" },
+    "readarrStatus": { "title": "Raw Readarr Info" },
+    "sonarrStatus": { "title": "Raw Sonarr Info" },
+    "lidarrStatus": { "title": "Raw Lidarr Info" },
+    "tautulliStatus": { "title": "Raw Tautulli Info" },
+    "tautulliUsers": { "title": "Tautulli Users" },
+    "tautulliUsersJson": { "title": "Raw Tautulli Users" },
+    "plexStatus": { "title": "Plex Media Server Info" },
+    "plexSessions": {
+      "title": "Current Plex Media Server Sessions",
+      "footer": "Displaying current Plex sessions, not the cached data. See the raw JSON modal for the cached data."
+    },
+    "plexSessionsJson": { "title": "Raw Plex Media Server Sessions" },
+    "mediaTitles": {
+      "Country": "Country",
+      "PushNotifications": "Push Notifications",
+      "PlexPass": "Plex Pass",
+      "ServerOwner": "Server Owner",
+      "Sessions": "Sessions",
+      "SessionsAge": "Sessions Age",
+      "Users": "Users",
+      "User": "User",
+      "PlexUsername": "Plex Username",
+      "CustomName": "Custom Name",
+      "Email": "Email",
+      "Session": "Session",
+      "Complete": "Complete",
+      "Encoding": "Encoding",
+      "Title": "Title"
+    },
+    "phrases": {
+      "NoCachedSessions": "No sessions cached.",
+      "NoPlexData": "No plex integration data.",
+      "StateForTime": "{state} for {timeDuration}"
+    }
+  },
+  "Languages": {
+    "menuTitle": "Language Help",
+    "title": "Localization Support",
+    "body": "This application is available in multiple languages. You can change the language by clicking the language selector in the profile menu. Some languages do not have active translators, so some translations may be incomplete. If you are interested in helping translate the application, please <a href=\"https://notifiarr.com/discord\" target=\"_blank\">visit us on Discord</a>. Head into the <code>#role-request</code> channel and type <code>!roleTranslate</code>. That gives you access to the <code>#translate</code> channel. Please join there and express your interest."
+  },
+  "ApiDocs": {
+    "Choose": "Choose an API to view",
+    "Contrast": "Please report any contrast problems with this page.",
+    "BasePath": "<b>Base Path</b>: <code>{basePath}</code>",
+    "api": {
+      "title": "Private API ({basePath})",
+      "body": "This is the API specification for the Notifiarr.com website. The website uses this API to interact with the client."
+    },
+    "ui": {
+      "title": "Web UI ({basePath})",
+      "body": "This specification is for the methods used by the Notifiarr Client frontend to interact with the backend. You're using the frontend right now."
+    }
+  },
+  "TestAllInstances": {
+    "title": "Test All Instances",
+    "Instance": "Instance",
+    "Message": "Message",
+    "Status": "Status",
+    "Updated": "<b>Test Updated</b>: <code>{timeDuration}</code>",
+    "TestElapsed": "<b>Test Elapsed</b>: <code>{timeDuration}</code>",
+    "Concurrency": "<b>Concurrency</b>: <code>{workerCount}</code>",
+    "Tested": "<b>Instances Tested</b>: <code>{testCount}</code>",
+    "clickRefresh": "Click the refresh button in the top-right to test again.",
+    "footer": "Use this troubleshooting tool to verify that all your instances are reachable and configured correctly. The timeout is hard coded to 15 seconds, which is close to how long the website will wait for a response."
+  },
+  "FileBrowser": {
+    "tooltip": {
+      "Go": "<code>cd {path}</code><br />Change directory to provided path.",
+      "SelectPath": "Select Path: <code>{path}</code>",
+      "Up": "<code>cd ..</code><br />Change directory to parent folder."
+    },
+    "FilterFiles": "Filter Files",
+    "CreateFileIn": "The file will be created in the path: <code>{path}</code>",
+    "CreateFolderIn": "The folder will be created in the path: <code>{path}</code>",
+    "Files": "Files: {count}",
+    "Folders": "Folders: {count}",
+    "FilesFiltered": "Files: {count}, filtered: {filtered}",
+    "FoldersFiltered": "Folders: {count}, filtered: {filtered}",
+    "Selected": "Selected: <code>{path}</code>",
+    "Created": "Created: {path}",
+    "Creating": "Creating...",
+    "InvalidPath": "Invalid path provided. Do not include slashes (<code>/</code> or <code>\\</code>).",
+    "FilterFilesDesc": "Use the file filter to quickly search the list of displayed files. Useful on folders with a lot of files. Use the <code>Menu</code> button to create a new folder or file. To select a file that does not exist, type it into the <code>Path</code> bar and click the green check button. Alternatively, use the <code>Create File</code> menu item to create it."
+  },
+  "Plex": {
+    "URLNotConfigured": "Plex URL is not configured. <go-to page=\"mediaApps\" subPage=\"plex\">Configure that here</go-to>.",
+    "TokenNotConfigured": "Plex Token is not configured. <go-to page=\"mediaApps\" subPage=\"plex\">Configure that here</go-to>.",
+    "Disabled": "Plex is administratively disabled. <go-to page=\"mediaApps\" subPage=\"plex\">Enable it here</go-to>.",
+    "WaitingForWebhooks": "Waiting for Plex webhooks...",
+    "WebhooksReceived": "Webhooks Received: <code>{count}</code>",
+    "NoStatus": "There is no Plex Media Server information cached. This could mean the Plex URL or Token is invalid, or the timeout is too short. Check the <go-to page=\"logFiles\">application logs</go-to> for more information.",
+    "WebhookNote": "<p>Did you already <a href=\"https://notifiarr.wiki/pages/client/afterInstall/#plex-webhook\" target=\"_blank\">configure the Plex Webhook</a>?</p><p>If the webhook counter is not incrementing when you pause and play a show, try restarting Plex Media Server. If that does not work, check the <go-to page=\"logFiles\">http logs</go-to> for invalid requests. If you don't see any, it may mean you have the wrong webhook URL configured in Plex. It should look like this: <spoiler-toggle><code>{webhookUrl}</code></spoiler-toggle> but this may not be accurate and depends on your server configuration.</p> Some web providers block access to the <code>{urlbase}plex</code> URI, so this application also accepts a Plex webhook at the <code>{urlbase}</code> URI and at <code>{urlbase}api/plex/post</code>. We offer versitility to ensure stable notifications.",
+    "WebsiteSettings": "Website Settings",
+    "AccountMap": "Account Map",
+    "ActivityDelay": "Activity Delay",
+    "WebhookCoolDown": "Webhook Cool Down",
+    "SessionsInterval": "Sessions Interval",
+    "MoviesFinished": "Movies Finished",
+    "SeriesFinished": "Series Finished",
+    "NoActivity": "No Activity"
+  }
+}

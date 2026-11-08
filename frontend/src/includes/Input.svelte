@@ -1,0 +1,309 @@
+<!-- David Newhall II, May 2025, Notifiarr, LLC. -->
+<script lang="ts">
+  import {
+    Badge,
+    Button,
+    Card,
+    FormGroup,
+    Input,
+    InputGroup,
+    Label,
+    type InputType,
+  } from '@sveltestrap/sveltestrap'
+  import Eye from 'phosphor-svelte/lib/Eye'
+  import EyeSlash from 'phosphor-svelte/lib/EyeSlash'
+  import UploadSimple from 'phosphor-svelte/lib/UploadSimple'
+  import WarningCircle from 'phosphor-svelte/lib/WarningCircle'
+  import T, { _ } from './Translate.svelte'
+  import { type Snippet } from 'svelte'
+  import Fa from './Fa.svelte'
+  import { slide } from 'svelte/transition'
+  import { deepEqual } from './util'
+  import { profile } from '../api/profile.svelte'
+
+  interface Props {
+    /** Must be unique. Identifies this component. */
+    id: string
+    /** The label to display above the input. Must be present in translation if not undefined here. */
+    label?: string
+    /** The placeholder text to display in the input. */
+    placeholder?: string
+    /** The description to display below the input. Must be present in translation if not undefined here. */
+    description?: string
+    /** The type of input. Like `text` or `select`. */
+    type?: InputType | 'interval' | 'timeout'
+    /** Optional tooltip to bind to input. */
+    tooltip?: string
+    /** Optional value. Should only be used for binding. */
+    value?: any
+    /** Optional original value. Used to check for changes.*/
+    original?: any
+    /** When false, skip dirty highlighting. Defaults to true. */
+    showChanged?: boolean
+    /** Optional badge to display on the input header. */
+    badge?: string
+    /** Optional options for select input. */
+    options?: Option[] | undefined
+    /** Optional validation function. */
+    validate?: (id: string, value: any) => string | undefined
+    /** Optional input-box prefix attachment. */
+    pre?: Snippet
+    /** Optional input-box suffix attachment. */
+    post?: Snippet
+    /** Optional children to render inside the input. Useful for select options. */
+    children?: Snippet
+    /** Optional message to display below the input. */
+    msg?: Snippet
+    /** When type is "timeout" this controls if -1 / disabled is an option. */
+    noDisable?: boolean
+    /** Invert Enabled/Disabled select values (true = Disabled). Defaults to id ending in "disabled". */
+    invert?: boolean
+    /** If this env var is set a notice is provided to the user as such. */
+    envVar?: string
+    /** Optional other attributes to apply to the input. */
+    [key: string]: any
+  }
+
+  let {
+    id,
+    label,
+    placeholder = $bindable(),
+    description,
+    type = 'text',
+    tooltip,
+    value = $bindable(undefined),
+    original = value,
+    showChanged = true,
+    options = undefined,
+    validate,
+    pre,
+    children,
+    badge = '',
+    post,
+    msg,
+    noDisable = false,
+    invert,
+    envVar,
+    class: restClass,
+    ...rest
+  }: Props = $props()
+
+  type Option = { value: string | number | boolean; name: string; disabled?: boolean }
+
+  const translated = (suffix: string, override?: string) => {
+    if (override !== undefined) return override === `${id}.${suffix}` ? '' : override
+    const key = `${id}.${suffix}`
+    const text = $_(key)
+    return text === key ? '' : text
+  }
+
+  let showTooltip = $state(false)
+  let revealed = $state(false)
+  let changed = $derived(showChanged && original !== null && !deepEqual(value, original))
+  const currType = $derived(
+    type === 'interval' || type === 'timeout'
+      ? 'select'
+      : type === 'password' && revealed
+        ? 'text'
+        : type,
+  )
+  const passIcon = $derived(revealed ? EyeSlash : Eye)
+  const feedback = $derived(validate?.(id, value) ?? '')
+  const labelText = $derived(label ?? $_(`${id}.label`))
+  const placeholderText = $derived(translated('placeholder', placeholder))
+  const descriptionText = $derived(translated('description', description))
+  const tooltipText = $derived(translated('tooltip', tooltip))
+  const inputClass = $derived(feedback ? 'is-invalid' : changed ? 'is-valid' : '')
+  const env = $derived('DN_' + envVar?.toUpperCase())
+  const hasEnv = $derived(!rest.disabled && !!envVar && !!$profile.environment?.[env])
+  const inverted = $derived(invert ?? id.endsWith('disabled'))
+  const selectOptions = $derived.by((): Option[] | undefined => {
+    if (type === 'interval') {
+      return [
+        { value: '0s', name: $_('words.select-option.ChecksDisabled') },
+        { value: '1m0s', name: '1 ' + $_('words.select-option.minute') },
+        { value: '2m0s', name: '2 ' + $_('words.select-option.minutes') },
+        { value: '3m0s', name: '3 ' + $_('words.select-option.minutes') },
+        { value: '4m0s', name: '4 ' + $_('words.select-option.minutes') },
+        { value: '5m0s', name: '5 ' + $_('words.select-option.minutes') },
+        { value: '6m0s', name: '6 ' + $_('words.select-option.minutes') },
+        { value: '7m0s', name: '7 ' + $_('words.select-option.minutes') },
+        { value: '8m0s', name: '8 ' + $_('words.select-option.minutes') },
+        { value: '9m0s', name: '9 ' + $_('words.select-option.minutes') },
+        { value: '10m0s', name: '10 ' + $_('words.select-option.minutes') },
+        { value: '15m0s', name: '15 ' + $_('words.select-option.minutes') },
+        { value: '20m0s', name: '20 ' + $_('words.select-option.minutes') },
+        { value: '25m0s', name: '25 ' + $_('words.select-option.minutes') },
+        { value: '30m0s', name: '30 ' + $_('words.select-option.minutes') },
+      ]
+    }
+    if (type === 'timeout') {
+      const opts: Option[] = [
+        { value: '0s', name: $_('words.select-option.NoTimeout') },
+        { value: '1s', name: '1 ' + $_('words.select-option.seconds') },
+        { value: '2s', name: '2 ' + $_('words.select-option.seconds') },
+        { value: '3s', name: '3 ' + $_('words.select-option.seconds') },
+        { value: '4s', name: '4 ' + $_('words.select-option.seconds') },
+        { value: '5s', name: '5 ' + $_('words.select-option.seconds') },
+        { value: '10s', name: '10 ' + $_('words.select-option.seconds') },
+        { value: '15s', name: '15 ' + $_('words.select-option.seconds') },
+        { value: '30s', name: '30 ' + $_('words.select-option.seconds') },
+        { value: '1m0s', name: '1 ' + $_('words.select-option.minute') },
+        { value: '2m0s', name: '2 ' + $_('words.select-option.minutes') },
+        { value: '3m0s', name: '3 ' + $_('words.select-option.minutes') },
+        { value: '4m0s', name: '4 ' + $_('words.select-option.minutes') },
+        { value: '5m0s', name: '5 ' + $_('words.select-option.minutes') },
+        { value: '6m0s', name: '6 ' + $_('words.select-option.minutes') },
+        { value: '7m0s', name: '7 ' + $_('words.select-option.minutes') },
+        { value: '8m0s', name: '8 ' + $_('words.select-option.minutes') },
+        { value: '9m0s', name: '9 ' + $_('words.select-option.minutes') },
+        { value: '10m0s', name: '10 ' + $_('words.select-option.minutes') },
+      ]
+      if (!noDisable) {
+        opts.unshift({ value: '-1s', name: $_('words.select-option.InstanceDisabled') })
+      }
+      return opts
+    }
+    return options
+  })
+
+  function toggleTooltip(e: Event | undefined = undefined) {
+    e?.preventDefault()
+    showTooltip = !showTooltip
+  }
+
+  function togglePassword(e: Event | undefined = undefined) {
+    e?.preventDefault()
+    revealed = !revealed
+  }
+</script>
+
+<div class="input">
+  <FormGroup>
+    <Label for={id}>
+      {@html labelText}
+      {#if badge}
+        <Badge color="secondary" style="margin-left: 0.5rem;">{badge}</Badge>
+      {/if}
+    </Label>
+    <InputGroup>
+      {#if tooltipText || (envVar && !rest.disabled)}
+        <Button
+          type="button"
+          color="secondary"
+          onclick={toggleTooltip}
+          outline
+          style="width:44px;"
+          aria-expanded={showTooltip}
+          title={$_('phrases.ShowMore')}>
+          {#if showTooltip}
+            <Fa i={UploadSimple} c1="dimgray" d1="gainsboro" btn />
+          {:else if hasEnv}
+            <Fa i={WarningCircle} c1="red" d1="mediumvioletred" btn />
+          {:else}
+            <Fa help btn />
+          {/if}
+        </Button>
+      {/if}
+      {@render pre?.()}
+      <Input
+        {id}
+        class={[inputClass, changed && 'changed', restClass]}
+        type={currType as InputType}
+        bind:value
+        autocomplete="off"
+        placeholder={placeholderText}
+        aria-invalid={!!feedback}
+        aria-describedby={feedback ? `${id}-feedback` : undefined}
+        {...rest}>
+        {#if children}
+          {@render children()}
+        {:else if selectOptions}
+          <!-- render provided options. -->
+          {#if !selectOptions.map(o => o.value).includes(value)}
+            <!-- If the current value is not in the options list, add it. -->
+            <option {value}>
+              {value} ({$_('words.select-option.custom')})
+            </option>
+          {/if}
+          <!-- Create a select option list from `options` input. -->
+          {#each selectOptions as o (o.value)}
+            <option value={o.value} disabled={o.disabled}>
+              {o.name}
+            </option>
+          {/each}
+        {:else if typeof value === 'boolean' && type === 'select'}
+          <option value={inverted}>
+            {$_('words.select-option.Disabled')}
+          </option>
+          <option value={!inverted}>
+            {$_('words.select-option.Enabled')}
+          </option>
+        {/if}
+      </Input>
+
+      <!-- Include a password visibility toggler. -->
+      {#if type === 'password'}
+        <Button
+          type="button"
+          outline
+          onclick={togglePassword}
+          style="width:44px;"
+          aria-pressed={revealed}
+          title={$_(revealed ? 'phrases.HidePassword' : 'phrases.ShowPassword')}>
+          <Fa i={passIcon} c1="royalblue" d1="orange" btn />
+        </Button>
+      {/if}
+      {@render post?.()}
+    </InputGroup>
+    {#if feedback}
+      <div class="text-danger" id="{id}-feedback">{feedback}</div>
+    {/if}
+
+    {#if showTooltip}
+      <div transition:slide>
+        <Card body class="mt-1" color="warning" outline>
+          {#if envVar && !rest.disabled}
+            <ul class="mb-0">
+              <li><T id="phrases.EnvironmentVariable" variableName={env} /></li>
+            </ul>
+            {#if hasEnv}
+              <p class="mt-2 mb-0"><T id="phrases.VariableDescription" /></p>
+            {/if}
+          {/if}
+          {#if tooltipText}<p class="mt-2 mb-0">{@html tooltipText}</p>{/if}
+        </Card>
+      </div>
+    {/if}
+
+    {#if descriptionText}<small class="text-muted">{@html descriptionText}</small>{/if}
+    {@render msg?.()}
+  </FormGroup>
+</div>
+
+<style>
+  /** Allows textarea to be resized vertically on mobile. */
+  .input :global(textarea) {
+    resize: vertical;
+  }
+
+  .input :global(label) {
+    font-weight: 550;
+    font-family: Verdana, Geneva, Tahoma, sans-serif;
+  }
+
+  /* Beat Bootstrap .form-control.is-valid / .form-select.is-valid. */
+  .input :global(.form-control.changed),
+  .input :global(.form-select.changed),
+  .input :global(.btn.changed) {
+    background-color: rgba(205, 92, 92, 0.322) !important;
+  }
+
+  .input :global(.input-group > .btn) {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    padding-left: 0;
+    padding-right: 0;
+  }
+</style>

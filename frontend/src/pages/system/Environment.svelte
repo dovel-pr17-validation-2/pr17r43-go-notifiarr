@@ -1,0 +1,28 @@
+<script lang="ts">
+  import Cube from 'phosphor-svelte/lib/Cube'
+  import { profile } from '../../api/profile.svelte'
+  import { Table } from '@sveltestrap/sveltestrap'
+  import Header from '../../includes/Helem.svelte'
+
+  const hasSecret = (key: string) =>
+    ['secret', 'password', 'token', 'key'].some(s => key.toLowerCase().includes(s))
+</script>
+
+<!-- Environment Section -->
+<Header id="EnvironmentVariables" i={Cube} c1="tan" c2="orange" />
+<Table>
+  <tbody>
+    {#each Object.entries($profile.environment || {}) as [key, value]}
+      <tr>
+        <th>{key}</th>
+        <td class="text-break">
+          {#if hasSecret(key)}
+            <spoiler-toggle>{value}</spoiler-toggle>
+          {:else}
+            {value}
+          {/if}
+        </td>
+      </tr>
+    {/each}
+  </tbody>
+</Table>

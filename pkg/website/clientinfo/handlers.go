@@ -1,0 +1,416 @@
+//nolint:lll,godot
+package clientinfo
+
+import (
+	"context"
+	"net/http"
+	"strconv"
+	"sync"
+
+	"github.com/Notifiarr/notifiarr/pkg/apps"
+	"github.com/Notifiarr/notifiarr/pkg/apps/apppkg/plex"
+	"github.com/Notifiarr/notifiarr/pkg/apps/apppkg/tautulli"
+	"github.com/Notifiarr/notifiarr/pkg/mnd"
+	"github.com/Notifiarr/notifiarr/pkg/triggers/data"
+	"github.com/gorilla/mux"
+	"golift.io/starr/lidarr"
+	"golift.io/starr/prowlarr"
+	"golift.io/starr/radarr"
+	"golift.io/starr/readarr"
+	"golift.io/starr/sonarr"
+)
+
+/* The version handler gets the version from a bunch of apps and returns them. */
+
+type conTest struct {
+	// The site-ID for the instance (1-index).
+	Instance int `json:"instance"`
+	// user-provided name of the instance.
+	Name string `json:"name"`
+	// Up is true if the instance is reachable.
+	Up bool `json:"up"`
+	// Error returned.
+	Error string `json:"error,omitempty"`
+}
+
+// LidarrConTest contains information about connected Lidarrs.
+type LidarrConTest struct {
+	conTest
+	Status *lidarr.SystemStatus `json:"systemStatus,omitempty"`
+}
+
+// RadarrConTest contains information about connected Radarrs.
+type RadarrConTest struct {
+	conTest
+	Status *radarr.SystemStatus `json:"systemStatus,omitempty"`
+}
+
+// ReadarrConTest contains information about connected Readarrs.
+type ReadarrConTest struct {
+	conTest
+	Status *readarr.SystemStatus `json:"systemStatus,omitempty"`
+}
+
+// SonarrConTest contains information about connected Sonarrs.
+type SonarrConTest struct {
+	conTest
+	Status *sonarr.SystemStatus `json:"systemStatus,omitempty"`
+}
+
+// ProwlarrConTest contains information about connected Prowlarrs.
+type ProwlarrConTest struct {
+	conTest
+	Status *prowlarr.SystemStatus `json:"systemStatus,omitempty"`
+}
+
+// PlexConTest contains information about a connected Plex.
+type PlexConTest struct {
+	Status *PlexInfo `json:"systemStatus,omitempty"`
+	conTest
+}
+
+// PlexInfo represents a small slice of the Plex Media Server Data.
+//
+//	@Description	Contains some very basic Plex data, including the name and version.
+type PlexInfo struct {
+	FriendlyName       string `json:"friendlyName"`
+	Version            string `json:"version"`
+	UpdatedAt          int64  `json:"updatedAt"`
+	Platform           string `json:"platform"`
+	PlatformVersion    string `json:"platformVersion"`
+	Size               int64  `json:"size"`
+	MyPlexSigninState  string `json:"myPlexSigninState"`
+	MyPlexSubscription bool   `json:"myPlexSubscription"`
+	PushNotifications  bool   `json:"pushNotifications"`
+}
+
+type TautulliConTest struct {
+	conTest
+	Status *tautulli.Info `json:"systemStatus,omitempty"`
+}
+
+// AppStatuses contains some integration up-statuses and versions.
+type AppStatuses struct {
+	Lidarr   []*LidarrConTest   `json:"lidarr,omitempty"`
+	Radarr   []*RadarrConTest   `json:"radarr,omitempty"`
+	Readarr  []*ReadarrConTest  `json:"readarr,omitempty"`
+	Sonarr   []*SonarrConTest   `json:"sonarr,omitempty"`
+	Prowlarr []*ProwlarrConTest `json:"prowlarr,omitempty"`
+	Plex     []*PlexConTest     `json:"plex,omitempty"`
+	Tautulli []*TautulliConTest `json:"tautulli,omitempty"`
+}
+
+// InfoHandler is like the version handler except it doesn't poll all the apps.
+//
+//	@Description	Returns information about the client's configuration. This endpoint returns all the instance IDs (and instance names if present). Use the returned instance IDs with endpoints that accept an instance ID.
+//	@Summary		Retrieve client info.
+//	@Tags			Client
+//	@Produce		json
+//	@Success		200	{object}	apps.APIResponse[clientinfo.AppInfo]	"contains all info except appStatus"
+//	@Failure		404	{object}	string								"bad token or api key"
+//	@Router			/info [get]
+//	@Security		ApiKeyAuth
+//
+//nolint:lll
+func (c *Config) InfoHandler(r *http.Request) (int, any) {
+	return http.StatusOK, c.Info(r.Context(), false)
+}
+
+// VersionHandler returns application run and build time data and application statuses.
+//
+//	@Description	Returns information about the client's configuration, and polls multiple applications for up-status and version.
+//	@Summary		Retrieve client info + starr/plex info.
+//	@Tags			Client
+//	@Produce		json
+//	@Success		200	{object}	apps.APIResponse[clientinfo.AppInfo]	"contains app info included appStatus"
+//	@Failure		404	{object}	string								"bad token or api key"
+//	@Router			/version [get]
+//	@Security		ApiKeyAuth
+func (c *Config) VersionHandler(r *http.Request) (int, any) {
+	output := c.Info(r.Context(), false)
+	output.AppsStatus = c.appStatsForVersion(r.Context())
+
+	return http.StatusOK, output
+}
+
+// VersionHandlerInstance returns application run and build time data and the status for the requested instance.
+//
+//	@Description	Returns information about the client's configuration, and polls 1 application instance for up-status and version.
+//	@Description	Plex and Tautulli only support app instance 1.
+//	@Summary		Retrieve client info + 1 app's info.
+//	@Tags			Client
+//	@Produce		json
+//	@Param			app			path		string								true	"Application"	Enums(lidarr, prowlarr, radarr, readarr, sonarr, plex, tautulli)
+//	@Param			instance	path		int64								true	"Application instance (1-index)."
+//	@Success		200			{object}	apps.APIResponse[clientinfo.AppInfo]	"contains app info included appStatus"
+//	@Failure		404			{object}	string								"bad token or api key"
+//	@Router			/version/{app}/{instance} [get]
+//	@Security		ApiKeyAuth
+func (c *Config) VersionHandlerInstance(r *http.Request) (int, any) {
+	output := c.Info(r.Context(), false)
+	instance, _ := strconv.Atoi(mux.Vars(r)["instance"])
+	output.AppsStatus = c.appStatsForVersionInstance(r.Context(), mux.Vars(r)["app"], instance)
+
+	return http.StatusOK, output
+}
+
+// appStatsForVersion loops each app and gets the version info.
+func (c *Config) appStatsForVersion(ctx context.Context) *AppStatuses {
+	reqID := mnd.Log.Trace(mnd.GetID(ctx), "start: Config.appStatsForVersion")
+	defer mnd.Log.Trace(reqID, "end: Config.appStatsForVersion")
+
+	var (
+		lid  = make([]*LidarrConTest, len(c.Lidarr))
+		prl  = make([]*ProwlarrConTest, len(c.Prowlarr))
+		rad  = make([]*RadarrConTest, len(c.Radarr))
+		read = make([]*ReadarrConTest, len(c.Readarr))
+		son  = make([]*SonarrConTest, len(c.Sonarr))
+		plx  = []*PlexConTest{}
+		wait sync.WaitGroup
+	)
+
+	c.getPlexVersion(ctx, &wait, &c.Plex, &plx)
+	c.getLidarrVersion(ctx, &wait, c.Lidarr, lid)
+	c.getProwlarrVersion(ctx, &wait, c.Prowlarr, prl)
+	c.getRadarrVersion(ctx, &wait, c.Radarr, rad)
+	c.getReadarrVersion(ctx, &wait, c.Readarr, read)
+	c.getSonarrVersion(ctx, &wait, c.Sonarr, son)
+	wait.Wait()
+
+	return &AppStatuses{
+		Lidarr:   lid,
+		Radarr:   rad,
+		Readarr:  read,
+		Sonarr:   son,
+		Prowlarr: prl,
+		Plex:     plx,
+	}
+}
+
+func (c *Config) getConTest(reqID, app string, name string, instance int, err error) conTest {
+	if err != nil {
+		mnd.Log.Errorf(reqID, "Getting %s %d (%s) system status: %v", app, instance, name, err)
+		return conTest{Instance: instance, Error: err.Error(), Name: name}
+	}
+
+	return conTest{Instance: instance, Up: true, Name: name}
+}
+
+// appStatsForVersionInstance handles a single-app version request.
+func (c *Config) appStatsForVersionInstance(ctx context.Context, app string, instance int) *AppStatuses { //nolint:cyclop,funlen
+	reqID := mnd.Log.Trace(mnd.GetID(ctx), "start: Config.appStatsForVersionInstance", app, instance)
+	defer mnd.Log.Trace(reqID, "end: Config.appStatsForVersionInstance", app, instance)
+
+	switch idx := instance - 1; app {
+	case "lidarr":
+		if instance <= len(c.Lidarr) && c.Apps.Lidarr[idx].Enabled() {
+			stat, err := c.Apps.Lidarr[idx].GetSystemStatusContext(ctx)
+			data.SaveWithID(app+mnd.Status, idx, stat)
+
+			return &AppStatuses{Lidarr: []*LidarrConTest{{c.getConTest(reqID, app, c.Apps.Lidarr[idx].Name, instance, err), stat}}}
+		}
+
+		return &AppStatuses{Lidarr: []*LidarrConTest{{
+			Instance: instance, Up: false, Name: c.Apps.Lidarr[idx].Name, Error: mnd.ErrDisabledInstance.Error(),
+		}}}
+	case "radarr":
+		if instance <= len(c.Radarr) && c.Apps.Radarr[idx].Enabled() {
+			stat, err := c.Apps.Radarr[idx].GetSystemStatusContext(ctx)
+			data.SaveWithID(app+mnd.Status, idx, stat)
+
+			return &AppStatuses{Radarr: []*RadarrConTest{{c.getConTest(reqID, app, c.Apps.Radarr[idx].Name, instance, err), stat}}}
+		}
+
+		return &AppStatuses{Radarr: []*RadarrConTest{{
+			Instance: instance, Up: false, Name: c.Apps.Radarr[idx].Name, Error: mnd.ErrDisabledInstance.Error(),
+		}}}
+	case "readarr":
+		if instance <= len(c.Readarr) && c.Apps.Readarr[idx].Enabled() {
+			stat, err := c.Apps.Readarr[idx].GetSystemStatusContext(ctx)
+			data.SaveWithID(app+mnd.Status, idx, stat)
+
+			return &AppStatuses{Readarr: []*ReadarrConTest{{c.getConTest(reqID, app, c.Apps.Readarr[idx].Name, instance, err), stat}}}
+		}
+
+		return &AppStatuses{Readarr: []*ReadarrConTest{{
+			Instance: instance, Up: false, Name: c.Apps.Readarr[idx].Name, Error: mnd.ErrDisabledInstance.Error(),
+		}}}
+	case "sonarr":
+		if instance <= len(c.Sonarr) && c.Apps.Sonarr[idx].Enabled() {
+			stat, err := c.Apps.Sonarr[idx].GetSystemStatusContext(ctx)
+			data.SaveWithID(app+mnd.Status, idx, stat)
+
+			return &AppStatuses{Sonarr: []*SonarrConTest{{c.getConTest(reqID, app, c.Apps.Sonarr[idx].Name, instance, err), stat}}}
+		}
+
+		return &AppStatuses{Sonarr: []*SonarrConTest{{
+			Instance: instance, Up: false, Name: c.Apps.Sonarr[idx].Name, Error: mnd.ErrDisabledInstance.Error(),
+		}}}
+	case "prowlarr":
+		if instance <= len(c.Prowlarr) && c.Apps.Prowlarr[idx].Enabled() {
+			stat, err := c.Apps.Prowlarr[idx].GetSystemStatusContext(ctx)
+			data.SaveWithID(app+mnd.Status, idx, stat)
+
+			return &AppStatuses{Prowlarr: []*ProwlarrConTest{{c.getConTest(reqID, app, c.Apps.Prowlarr[idx].Name, instance, err), stat}}}
+		}
+
+		return &AppStatuses{Prowlarr: []*ProwlarrConTest{{
+			Instance: instance, Up: false, Name: c.Apps.Prowlarr[idx].Name, Error: mnd.ErrDisabledInstance.Error(),
+		}}}
+	case "plex":
+		stat := &AppStatuses{Plex: c.plexVersionReply(ctx)}
+		stat.Plex[0].Name = c.Plex.Name()
+
+		return stat
+	case "tautulli":
+		if !c.Tautulli.Enabled() {
+			return &AppStatuses{Tautulli: []*TautulliConTest{{
+				Instance: 1, Up: false, Name: c.Tautulli.Name, Error: mnd.ErrDisabledInstance.Error(),
+			}}}
+		}
+
+		stat, err := c.Tautulli.GetInfo(ctx)
+		data.SaveWithID(app+mnd.Status, 1, stat)
+
+		return &AppStatuses{Tautulli: []*TautulliConTest{{c.getConTest(reqID, app, c.Tautulli.Name, 1, err), stat}}}
+	}
+
+	return nil
+}
+
+func (c *Config) getLidarrVersion(ctx context.Context, wait *sync.WaitGroup, lidarrs []apps.Lidarr, lid []*LidarrConTest) {
+	for idx, app := range lidarrs {
+		lid[idx] = &LidarrConTest{Instance: idx + 1, Up: false, Name: app.Name}
+
+		if !app.Enabled() {
+			lid[idx].Error = mnd.ErrDisabledInstance.Error()
+			continue
+		}
+
+		wait.Go(func() {
+			reqID := mnd.Log.Trace(mnd.GetID(ctx), "start: Lidarr.GetSystemStatusContext")
+			defer mnd.Log.Trace(reqID, "end: Lidarr.GetSystemStatusContext")
+
+			stat, err := app.GetSystemStatusContext(ctx)
+			data.SaveWithID("lidarrStatus", idx, stat)
+
+			lid[idx] = &LidarrConTest{conTest: c.getConTest(reqID, "Lidarr", app.Name, idx+1, err), Status: stat}
+		})
+	}
+}
+
+func (c *Config) getProwlarrVersion(ctx context.Context, wait *sync.WaitGroup, prowlarrs []apps.Prowlarr, prl []*ProwlarrConTest) {
+	for idx, app := range prowlarrs {
+		prl[idx] = &ProwlarrConTest{Instance: idx + 1, Up: false, Name: app.Name}
+
+		if !app.Enabled() {
+			prl[idx].Error = mnd.ErrDisabledInstance.Error()
+			continue
+		}
+
+		wait.Go(func() {
+			reqID := mnd.Log.Trace(mnd.GetID(ctx), "start: Prowlarr.GetSystemStatusContext")
+			defer mnd.Log.Trace(reqID, "end: Prowlarr.GetSystemStatusContext")
+
+			stat, err := app.GetSystemStatusContext(ctx)
+			data.SaveWithID("prowlarrStatus", idx, stat)
+
+			prl[idx] = &ProwlarrConTest{conTest: c.getConTest(reqID, "Prowlarr", app.Name, idx+1, err), Status: stat}
+		})
+	}
+}
+
+func (c *Config) getRadarrVersion(ctx context.Context, wait *sync.WaitGroup, radarrs []apps.Radarr, rad []*RadarrConTest) {
+	for idx, app := range radarrs {
+		rad[idx] = &RadarrConTest{Instance: idx + 1, Up: false, Name: app.Name}
+
+		if !app.Enabled() {
+			rad[idx].Error = mnd.ErrDisabledInstance.Error()
+			continue
+		}
+
+		wait.Go(func() {
+			reqID := mnd.Log.Trace(mnd.GetID(ctx), "start: Radarr.GetSystemStatusContext")
+			defer mnd.Log.Trace(reqID, "end: Radarr.GetSystemStatusContext")
+
+			stat, err := app.GetSystemStatusContext(ctx)
+			data.SaveWithID("radarrStatus", idx, stat)
+
+			rad[idx] = &RadarrConTest{conTest: c.getConTest(reqID, "Radarr", app.Name, idx+1, err), Status: stat}
+		})
+	}
+}
+
+func (c *Config) getReadarrVersion(ctx context.Context, wait *sync.WaitGroup, readarrs []apps.Readarr, read []*ReadarrConTest) {
+	for idx, app := range readarrs {
+		read[idx] = &ReadarrConTest{Instance: idx + 1, Up: false, Name: app.Name}
+
+		if !app.Enabled() {
+			read[idx].Error = mnd.ErrDisabledInstance.Error()
+			continue
+		}
+
+		wait.Go(func() {
+			reqID := mnd.Log.Trace(mnd.GetID(ctx), "start: Readarr.GetSystemStatusContext")
+			defer mnd.Log.Trace(reqID, "end: Readarr.GetSystemStatusContext")
+
+			stat, err := app.GetSystemStatusContext(ctx)
+			data.SaveWithID("readarrStatus", idx, stat)
+
+			read[idx] = &ReadarrConTest{conTest: c.getConTest(reqID, "Readarr", app.Name, idx+1, err), Status: stat}
+		})
+	}
+}
+
+func (c *Config) getSonarrVersion(ctx context.Context, wait *sync.WaitGroup, sonarrs []apps.Sonarr, son []*SonarrConTest) {
+	for idx, app := range sonarrs {
+		son[idx] = &SonarrConTest{Instance: idx + 1, Up: false, Name: app.Name}
+
+		if !app.Enabled() {
+			son[idx].Error = mnd.ErrDisabledInstance.Error()
+			continue
+		}
+
+		wait.Go(func() {
+			reqID := mnd.Log.Trace(mnd.GetID(ctx), "start: Sonarr.GetSystemStatusContext")
+			defer mnd.Log.Trace(reqID, "end: Sonarr.GetSystemStatusContext")
+
+			stat, err := app.GetSystemStatusContext(ctx)
+			data.SaveWithID("sonarrStatus", idx, stat)
+
+			son[idx] = &SonarrConTest{conTest: c.getConTest(reqID, "Sonarr", app.Name, idx+1, err), Status: stat}
+		})
+	}
+}
+
+func (c *Config) getPlexVersion(ctx context.Context, wait *sync.WaitGroup, plexServer *apps.Plex, plx *[]*PlexConTest) {
+	if !plexServer.Enabled() {
+		return
+	}
+
+	wait.Go(func() {
+		*plx = c.plexVersionReply(ctx) //nolint:wsl
+	})
+}
+
+func (c *Config) plexVersionReply(ctx context.Context) []*PlexConTest {
+	stat, err := c.Plex.GetInfo(ctx)
+	if stat == nil {
+		stat = &plex.PMSInfo{}
+	}
+
+	return []*PlexConTest{{
+		&PlexInfo{
+			FriendlyName:       stat.FriendlyName,
+			Version:            stat.Version,
+			UpdatedAt:          stat.UpdatedAt,
+			Platform:           stat.Platform,
+			PlatformVersion:    stat.PlatformVersion,
+			Size:               stat.Size,
+			MyPlexSigninState:  stat.MyPlexSigninState,
+			MyPlexSubscription: stat.MyPlexSubscription,
+			PushNotifications:  stat.PushNotifications,
+		},
+		c.getConTest(mnd.GetID(ctx), "Plex", stat.FriendlyName, 1, err),
+	}}
+}

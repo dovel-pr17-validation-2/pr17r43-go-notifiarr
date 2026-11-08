@@ -1,0 +1,102 @@
+<script lang="ts" module>
+  export const page = { id: 'Configuration' }
+</script>
+
+<script lang="ts">
+  import { CardBody } from '@sveltestrap/sveltestrap'
+  import { profile } from '../../api/profile.svelte'
+  import Input from '../../includes/Input.svelte'
+  import { _ } from '../../includes/Translate.svelte'
+  import Footer from '../../includes/Footer.svelte'
+  import Header from '../../includes/Header.svelte'
+  import Logging from './Logging.svelte'
+  import SslConfig from './SSLConfig.svelte'
+  import System from './System.svelte'
+  import Network from './Network.svelte'
+  import { deepEqual } from '../../includes/util'
+  import { nav } from '../../navigation/nav.svelte'
+  import Nodal from '../../includes/Nodal.svelte'
+  import { get } from 'svelte/store'
+
+  // Local state that syncs with profile store.
+  let config = $state($profile.config)
+  // Convert array to newline-separated string for textarea
+  let extraKeys = $state($profile.config.extraKeys?.join('\n') ?? '')
+  const rows = $derived(
+    extraKeys.split('\n').length > 10 ? 10 : extraKeys.split('\n').length,
+  )
+
+  // Handle form submission
+  function submit() {
+    config.extraKeys = extraKeys.split(/\s+/).filter(key => key.trim() !== '')
+    profile.writeConfig(config).then(ok => reset(ok))
+  }
+
+  const reset = (ok: boolean) => {
+    if (!ok) return
+    // Read the store once. Assigning `config` then reading `config.extraKeys` made
+    // `$effect(() => reset(!!profile.updated))` depend on the $state it just wrote.
+    const next = $profile.config
+    config = next
+    extraKeys = next.extraKeys?.join('\n') ?? ''
+  }
+
+  // Reset config when profile is updated (when reload button is clicked).
+  $effect(() => reset(!!profile.updated))
+
+  // Keep track of form changes. This causes an "unsaved changes" modal to be shown.
+  $effect(() => {
+    nav.formChanged =
+      !deepEqual($profile.config, config) ||
+      extraKeys !== ($profile.config.extraKeys?.join('\n') ?? '')
+  })
+
+  let isOpen = $state(false)
+</script>
+
+<Header
+  {page}
+  onclick={() => (isOpen = true)}
+  badge={$_('phrases.Version', { values: { version: config.version } })} />
+
+<CardBody class="pt-0 mt-0">
+  <!-- General Section -->
+  <h4>{$_('config.titles.General')}</h4>
+  <Input
+    id="config.apiKey"
+    type="password"
+    envVar="API_KEY"
+    bind:value={config.apiKey}
+    original={$profile.config.apiKey}
+    validate={(_id, value) =>
+      (value ?? '').length === 36
+        ? undefined
+        : get(_)('phrases.APIKeyMustBeCountCharacters', { values: { count: 36 } })} />
+  <Input
+    id="config.extraKeys"
+    type="textarea"
+    envVar="EXTRA_KEYS"
+    bind:value={extraKeys}
+    {rows}
+    original={$profile.config.extraKeys?.join('\n') ?? ''} />
+  <Input
+    id="config.hostId"
+    envVar="HOST_ID"
+    bind:value={config.hostId}
+    original={$profile.config.hostId} />
+
+  <!-- Network Section -->
+  <Network bind:config original={$profile.config} />
+  <!-- System Section -->
+  <System bind:config original={$profile.config} />
+  <!-- SSL Section -->
+  <SslConfig bind:config original={$profile.config} />
+  <!-- Logging Section -->
+  <Logging bind:config original={$profile.config} />
+</CardBody>
+
+<Footer {submit} saveDisabled={!nav.formChanged} />
+
+<Nodal bind:isOpen title="Raw Configuration" size="xl" full>
+  <pre>{JSON.stringify($profile.config, null, 2)}</pre>
+</Nodal>

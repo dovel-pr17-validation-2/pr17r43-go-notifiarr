@@ -1,0 +1,29 @@
+FROM ubuntu:26.04@sha256:6a06111c3b0a8600feadb270aec771dc239bf407b25625f93f44ab00e11f4d3c
+
+ARG TARGETPLATFORM
+ARG TARGETARCH
+COPY --chmod=755 ${TARGETPLATFORM}/notifiarr /notifiarr
+
+RUN DEBIAN_FRONTEND=noninteractive apt-get update \
+    && apt-get install -y --no-install-recommends \
+        ca-certificates curl smartmontools ipmitool zfsutils-linux sysstat libncurses6 tzdata \
+    && curl -sSo /notifiarr.tgz \
+        "https://raw.githubusercontent.com/Notifiarr/build-dependencies/main/notifiarr-docker-${TARGETARCH}.tgz" \
+    && tar -zxf /notifiarr.tgz -C / \
+    && rm -f /notifiarr.tgz \
+    && apt-get clean \
+    && rm -rf /var/lib/apt/lists/*
+
+# GPU snapshots only need nvidia-smi from the host NVIDIA Container Toolkit.
+# Do not FROM nvidia/cuda: that image sets NVIDIA_REQUIRE_CUDA and refuses to
+# start on older host drivers. Notifiarr does not use the CUDA runtime.
+# NVIDIA_VISIBLE_DEVICES stays on :cuda only so :ubuntu is inert unless --gpus.
+ENV NVIDIA_VISIBLE_DEVICES=all
+ENV NVIDIA_DRIVER_CAPABILITIES=utility
+ENV DN_SNAPSHOT_NVIDIA_SMI_PATH=/usr/bin/nvidia-smi
+ENV TZ=UTC
+ENV PATH=/usr/local/nvidia/bin:/bin:/usr/bin:/sbin:/usr/sbin
+ENV USER=root
+
+EXPOSE 5454
+ENTRYPOINT ["/notifiarr"]

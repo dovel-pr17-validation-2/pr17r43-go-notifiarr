@@ -1,0 +1,225 @@
+//go:build darwin || windows || linux
+
+package client
+
+import (
+	"context"
+	"fmt"
+	"strings"
+
+	"github.com/Notifiarr/notifiarr/pkg/configfile"
+	"github.com/Notifiarr/notifiarr/pkg/logs"
+	"github.com/Notifiarr/notifiarr/pkg/mnd"
+	"github.com/Notifiarr/notifiarr/pkg/ui"
+	"github.com/Notifiarr/notifiarr/pkg/update"
+)
+
+/* This file contains methods that are triggered from the GUI menu. */
+
+func (c *Client) toggleServer(ctx context.Context) {
+	if !menu["stat"].Checked() {
+		ui.Toast(ctx, "Started web server") //nolint:errcheck
+		logs.Log.Printf(mnd.GetID(ctx), "[user requested] Starting Web Server, baseurl: %s, bind address: %s",
+			c.Config.URLBase, c.Config.BindAddr)
+		go c.RunWebServer()
+
+		return
+	}
+
+	ui.Toast(ctx, "Paused web server") //nolint:errcheck
+	logs.Log.Printf(mnd.GetID(ctx), "[user requested] Pausing Web Server")
+
+	if err := c.StopWebServer(ctx); err != nil {
+		logs.Log.Errorf(mnd.GetID(ctx), "Unable to Pause Server: %v", err)
+	}
+}
+
+func (c *Client) rotateLogs(ctx context.Context) {
+	logs.Log.Printf(mnd.GetID(ctx), "[user requested] Rotating Log Files!")
+	ui.Toast(ctx, "Rotating log files") //nolint:errcheck
+
+	for _, err := range logs.Log.Rotate() {
+		if err != nil {
+			ui.Toast(ctx, "Error rotating log files: %v", err) //nolint:errcheck
+			logs.Log.Errorf(mnd.GetID(ctx), "Rotating Log Files: %v", err)
+		}
+	}
+}
+
+// This is always outdated. :( The format on screen sucks anyway. This should probably be removed.
+func (c *Client) displayConfig() string { //nolint: funlen,cyclop
+	var out strings.Builder
+
+	out.WriteString("Config File: " + c.Flags.ConfigFile)
+	fmt.Fprintf(&out, "\nTimeout: %v", c.Config.Timeout)
+	fmt.Fprintf(&out, "\nUpstreams: %v", c.allow.Input)
+
+	if c.Config.SSLCrtFile != "" && c.Config.SSLKeyFile != "" {
+		fmt.Fprintf(&out, "\nHTTPS: https://%s%s", c.Config.BindAddr, c.Config.URLBase)
+		fmt.Fprintf(&out, "\nCert File: %v", c.Config.SSLCrtFile)
+		fmt.Fprintf(&out, "\nCert Key: %v", c.Config.SSLKeyFile)
+	} else {
+		fmt.Fprintf(&out, "\nHTTP: http://%s%s", c.Config.BindAddr, c.Config.URLBase)
+	}
+
+	if c.Config.LogFiles > 0 {
+		fmt.Fprintf(&out, "\nLog File: %v (%d @ %dMb)", c.Config.LogFile, c.Config.LogFiles, c.Config.LogFileMb)
+		fmt.Fprintf(&out, "\nHTTP Log: %v (%d @ %dMb)", c.Config.HTTPLog, c.Config.LogFiles, c.Config.LogFileMb)
+	} else {
+		fmt.Fprintf(&out, "\nLog File: %v (no rotation)", c.Config.LogFile)
+		fmt.Fprintf(&out, "\nHTTP Log: %v (no rotation)", c.Config.HTTPLog)
+	}
+
+	if count := len(c.Config.Lidarr); count == 1 {
+		fmt.Fprintf(&out, "\n- Lidarr Config: 1 server: %s, apikey:%v, timeout:%v, verify ssl:%v",
+			c.Config.Lidarr[0].URL, c.Config.Lidarr[0].APIKey != "", c.Config.Lidarr[0].Timeout, c.Config.Lidarr[0].ValidSSL)
+	} else {
+		for _, f := range c.Config.Lidarr {
+			fmt.Fprintf(&out, "\n- Lidarr Server: %s, apikey:%v, timeout:%v, verify ssl:%v",
+				f.URL, f.APIKey != "", f.Timeout, f.ValidSSL)
+		}
+	}
+
+	if count := len(c.Config.Radarr); count == 1 {
+		fmt.Fprintf(&out, "\n- Radarr Config: 1 server: %s, apikey:%v, timeout:%v, verify ssl:%v",
+			c.Config.Radarr[0].URL, c.Config.Radarr[0].APIKey != "", c.Config.Radarr[0].Timeout, c.Config.Radarr[0].ValidSSL)
+	} else {
+		for _, f := range c.Config.Radarr {
+			fmt.Fprintf(&out, "\n- Radarr Server: %s, apikey:%v, timeout:%v, verify ssl:%v",
+				f.URL, f.APIKey != "", f.Timeout, f.ValidSSL)
+		}
+	}
+
+	if count := len(c.Config.Readarr); count == 1 {
+		fmt.Fprintf(&out, "\n- Readarr Config: 1 server: %s, apikey:%v, timeout:%v, verify ssl:%v",
+			c.Config.Readarr[0].URL, c.Config.Readarr[0].APIKey != "", c.Config.Readarr[0].Timeout,
+			c.Config.Readarr[0].ValidSSL)
+	} else {
+		for _, f := range c.Config.Readarr {
+			fmt.Fprintf(&out, "\n- Readarr Server: %s, apikey:%v, timeout:%v, verify ssl:%v",
+				f.URL, f.APIKey != "", f.Timeout, f.ValidSSL)
+		}
+	}
+
+	if count := len(c.Config.Sonarr); count == 1 {
+		fmt.Fprintf(&out, "\n- Sonarr Config: 1 server: %s, apikey:%v, timeout:%v, verify ssl:%v",
+			c.Config.Sonarr[0].URL, c.Config.Sonarr[0].APIKey != "", c.Config.Sonarr[0].Timeout, c.Config.Sonarr[0].ValidSSL)
+	} else {
+		for _, f := range c.Config.Sonarr {
+			fmt.Fprintf(&out, "\n- Sonarr Server: %s, apikey:%v, timeout:%v, verify ssl:%v",
+				f.URL, f.APIKey != "", f.Timeout, f.ValidSSL)
+		}
+	}
+
+	return out.String() + "\n"
+}
+
+func (c *Client) writeConfigFile(ctx context.Context) {
+	val, _, _ := ui.Entry("Enter path to write config file:", c.Flags.ConfigFile)
+
+	if val == "" {
+		ui.Error("No Config File Provided")
+		return
+	}
+
+	logs.Log.Print(mnd.GetID(ctx), "[user requested] Writing Config File:", val)
+
+	if _, err := c.Config.Write(ctx, val, false); err != nil {
+		logs.Log.Errorf(mnd.GetID(ctx), "Writing Config File: %v", err)
+		ui.Error("Writing Config File: " + err.Error())
+
+		return
+	}
+
+	ui.Info("Wrote Config File: " + val)
+}
+
+func (c *Client) menuPanic(reqID string) {
+	defer logs.Log.CapturePanic()
+
+	yes, err := ui.Question("You really want to panic?", true)
+	if !yes || err != nil {
+		return
+	}
+
+	defer logs.Log.Printf(reqID, "User Requested Application Panic, good bye.")
+	panic("user requested panic")
+}
+
+func (c *Client) openGUI(ctx context.Context) {
+	uri := "http://127.0.0.1"
+	if c.Config.SSLCrtFile != "" && c.Config.SSLKeyFile != "" {
+		uri = "https://127.0.0.1"
+	}
+
+	// This always has a colon, or the app will not start.
+	port := strings.Split(c.Config.BindAddr, ":")[1]
+	if err := ui.OpenURL(ctx, uri+":"+port+c.Config.URLBase); err != nil {
+		logs.Log.Errorf(mnd.GetID(ctx), "Opening URL: %v", err)
+	}
+}
+
+//nolint:errcheck
+func (c *Client) autoStart(ctx context.Context) {
+	if menu["auto"].Checked() {
+		menu["auto"].Uncheck()
+
+		if file, err := ui.DeleteStartupLink(); err != nil {
+			ui.Toast(ctx, "Failed disabling autostart: %s", err.Error())
+			logs.Log.Errorf(mnd.GetID(ctx), "[user requested] Disabling auto start: %v", err)
+		} else {
+			ui.Toast(ctx, "Removed auto start file: %s", file)
+			logs.Log.Printf(mnd.GetID(ctx), "[user requested] Removed auto start file: %s", file)
+		}
+
+		return
+	}
+
+	menu["auto"].Check()
+
+	if loaded, file, err := ui.CreateStartupLink(ctx); err != nil {
+		ui.Toast(ctx, "Failed enabling autostart: %s", err.Error())
+		logs.Log.Errorf(mnd.GetID(ctx), "[user requested] Enabling auto start: %v", err)
+	} else if mnd.IsDarwin && !loaded {
+		ui.Toast(ctx, "Created auto start file: %s - Exiting so launchctl can restart the app.", file)
+		logs.Log.Printf(mnd.GetID(ctx), "[user requested] Created auto start file: %s (exiting)", file)
+		c.sigkil <- &update.Signal{Text: "launchctl restart"}
+	} else {
+		ui.Toast(ctx, "Created auto start file: %s", file)
+		logs.Log.Printf(mnd.GetID(ctx), "[user requested] Created auto start file: %s", file)
+	}
+}
+
+func (c *Client) updatePassword(ctx context.Context) {
+	pass, _, err := ui.Entry("Enter new Web UI admin password (must be 9+ characters):", "")
+	if err != nil {
+		logs.Log.Errorf(mnd.GetID(ctx), "err: %v", err)
+		return
+	}
+
+	if err := c.StopWebServer(ctx); err != nil {
+		logs.Log.Errorf(mnd.GetID(ctx), "Stopping web server: %v", err)
+
+		if err = ui.Toast(ctx, "Stopping web server failed, password not updated."); err != nil {
+			logs.Log.Errorf(mnd.GetID(ctx), "Creating Toast Notification: %v", err)
+		}
+
+		return
+	}
+
+	logs.Log.Printf(mnd.GetID(ctx), "[user requested] Updating Web UI password.")
+
+	c.Lock()
+	defer c.Unlock()
+
+	if err := c.Config.UIPassword.Set(configfile.DefaultUsername, pass); err != nil {
+		logs.Log.Errorf(mnd.GetID(ctx), "Updating Web UI Password: %v", err)
+		ui.Error("Updating Web UI Password: " + err.Error())
+	}
+
+	if err = ui.Toast(ctx, "Web UI password updated. Save config to persist this change."); err != nil {
+		logs.Log.Errorf(mnd.GetID(ctx), "Creating Toast Notification: %v", err)
+	}
+
+	go c.RunWebServer()
+}

@@ -1,0 +1,35 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+	<key>CFBundleName</key>
+	<string>Notifiarr</string>
+	<key>CFBundleIdentifier</key>
+	<string>io.golift.notifiarr</string>
+	<key>CFBundleExecutable</key>
+	<string>Notifiarr</string>
+	<key>CFBundleIconFile</key>
+	<string>Notifiarr.icns</string>
+	<key>CFBundleInfoDictionaryVersion</key>
+	<string>6.0</string>
+	<key>CFBundleVersion</key>
+	<string>{{VERSION}}</string>
+	<key>CFBundleShortVersionString</key>
+	<string>{{VERSION}}</string>
+	<key>NSHumanReadableCopyright</key>
+	<string>© 2024 Go Lift (https://golift.io)</string>
+	<key>NSPrincipalClass</key>
+	<string>NSApplication</string>
+	<key>LSApplicationCategoryType</key>
+	<string>public.app-category.utilities</string>
+	<key>LSUIElement</key>
+	<true/>
+	<key>LSEnvironment</key>
+	<dict>
+	     <key>USEGUI</key>
+	     <string>true</string>
+	     <key>DN_QUIET</key>
+	     <string>true</string>
+	</dict>
+</dict>
+</plist>

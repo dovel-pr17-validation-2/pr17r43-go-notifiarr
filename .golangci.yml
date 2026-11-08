@@ -1,0 +1,51 @@
+version: '2'
+linters:
+  default: all
+  disable:
+    - exhaustruct # This will never work in this app.
+    - exhaustruct_v5 # same.
+    - dupl # Maybe one day we can reduce the duplicate code with generics.
+    - nlreturn # Not needed because wsl is good enough; better actually.
+    - godot # Does not work with annotations.
+    - depguard # Not even sure why this is useful. We have too many deps to care.
+    - gomodguard # deprecated
+    - funcorder # lol no one cares.
+    - gochecknoglobals # we use global sparingly, but they are useful.
+    - interfacebloat # I'll do what I want with my own interfaces.
+    - recvcheck # This is a false positive. Uncomment and check once in a while.
+    - gosec
+    - wsl_v5
+    - wsl # deprecated
+    - goconst
+    - noinlineerr
+    - embeddedstructfieldcheck
+  exclusions:
+    # flatted (an ESLint dependency) publishes a Go port with no go.mod.
+    paths:
+      - node_modules
+    presets:
+      - comments
+      - std-error-handling
+      - common-false-positives
+      - legacy
+    rules:
+      - path: 'pkg/.*/.*_test.go'
+        linters:
+          - err113
+      # Exclude some linters from running on auto-generated files.
+      - path: 'pkg/bindata/docs/*'
+        linters:
+          - lll
+          - gochecknoinits
+          - gochecknoglobals
+
+issues:
+  max-issues-per-linter: 0
+  max-same-issues: 0
+
+formatters:
+  enable:
+    - gci
+    - gofmt
+    - gofumpt
+    - goimports

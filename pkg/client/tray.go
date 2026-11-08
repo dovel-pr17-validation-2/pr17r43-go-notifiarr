@@ -1,0 +1,407 @@
+//go:build darwin || windows || linux
+
+//nolint:errcheck
+package client
+
+import (
+	"context"
+	"fmt"
+	"io"
+	"os"
+	"strings"
+
+	"github.com/Notifiarr/notifiarr/frontend"
+	"github.com/Notifiarr/notifiarr/pkg/logs"
+	"github.com/Notifiarr/notifiarr/pkg/mnd"
+	"github.com/Notifiarr/notifiarr/pkg/triggers/common"
+	"github.com/Notifiarr/notifiarr/pkg/ui"
+	"github.com/Notifiarr/notifiarr/pkg/website"
+	"github.com/Notifiarr/notifiarr/pkg/website/clientinfo"
+	"github.com/energye/systray"
+	"golift.io/starr"
+)
+
+/* This file handles the OS GUI elements. */
+
+// This is arbitrary to avoid conflicts.
+const timerPrefix = "TimErr"
+
+// This variable holds all the menu items.
+var menu = make(map[string]*systray.MenuItem) //nolint:gochecknoglobals
+
+// startTray Run()s readyTray to bring up the web server and the GUI app.
+func (c *Client) startTray(ctx context.Context, clientInfo *clientinfo.ClientInfo, reload func()) {
+	systray.Run(func() {
+		ctx := mnd.SetID(ctx)
+
+		defer os.Exit(0)
+		defer logs.Log.CapturePanic()
+
+		b, _ := frontend.Root.Open(ui.SystrayIcon)
+		file, _ := io.ReadAll(b)
+		systray.SetTemplateIcon(file, file)
+		systray.SetTooltip(mnd.PrintVersionInfo(c.Flags.Name()))
+		// systray.SetOnClick(c.showMenu) // buggy
+		systray.SetOnRClick(func(menu systray.IMenu) { c.showMenu(mnd.GetID(ctx), menu) })
+		systray.SetOnDClick(func(_ systray.IMenu) { c.openGUI(ctx) })
+		c.makeMenus(ctx, clientInfo) // make the menu before starting the web server.
+		c.setupMenus(clientInfo)     // code that runs on reload, too.
+
+		// This starts the web server, and waits for reload/exit signals.
+		if err := c.Exit(ctx, reload); err != nil {
+			logs.Log.Errorf(mnd.GetID(ctx), "Server: %v", err)
+			os.Exit(1) // web server problem
+		}
+	}, func() {
+		// This code only fires from menu->quit.
+		if err := c.stop(ctx, website.EventUser); err != nil {
+			logs.Log.Errorf(mnd.GetID(ctx), "Server: %v", err)
+			os.Exit(1) // web server problem
+		}
+		// because systray wants to control the exit code? no..
+		os.Exit(0)
+	})
+}
+
+func (c *Client) showMenu(reqID string, menu systray.IMenu) {
+	if err := menu.ShowMenu(); err != nil {
+		logs.Log.Errorf(reqID, "Menu Failed: %v", err)
+	}
+}
+
+// setupMenus is the only code that re-runs on reload.
+func (c *Client) setupMenus(clientInfo *clientinfo.ClientInfo) {
+	if !ui.HasGUI() {
+		return
+	}
+
+	if !c.Config.Debug {
+		menu["debug"].Hide()
+	} else {
+		menu["debug"].Show()
+
+		if c.Config.DebugLog == "" {
+			menu["debug_logs"].Hide()
+			menu["debug_logs2"].Hide()
+		} else {
+			menu["debug_logs"].Show()
+			menu["debug_logs2"].Show()
+		}
+	}
+
+	if c.Config.Services.LogFile == "" {
+		menu["logs_svcs"].Hide()
+	} else {
+		menu["logs_svcs"].Show()
+	}
+
+	if !c.Config.Services.Disabled {
+		menu["svcs"].Check()
+	} else {
+		menu["svcs"].Uncheck()
+	}
+
+	if clientInfo == nil {
+		return
+	}
+
+	go c.buildDynamicTimerMenus()
+
+	if clientInfo.IsSub() {
+		menu["sub"].SetTitle("Subscriber \u2764\ufe0f")
+		menu["sub"].Check()
+		menu["sub"].Disable()
+		menu["sub"].SetTooltip("THANK YOU for supporting the project!")
+	} else if clientInfo.IsPatron() {
+		menu["sub"].SetTitle("Patron \U0001f9e1")
+		menu["sub"].SetTooltip("THANK YOU for supporting the project!")
+		menu["sub"].Check()
+	}
+}
+
+func (c *Client) makeMenus(ctx context.Context, clientInfo *clientinfo.ClientInfo) {
+	menu["stat"] = systray.AddMenuItemCheckbox("Running", "web server state unknown", false)
+	menu["stat"].Click(func() { c.toggleServer(ctx) })
+	menu["stat"].Disable() // so the webserver cannot be started twice on startup.
+
+	c.configMenu(ctx)
+	c.linksMenu(ctx)
+	c.logsMenu(ctx)
+	c.notifiarrMenu(ctx)
+	c.debugMenu(ctx)
+
+	menu["update"] = systray.AddMenuItem("Update", "check GitHub for updated version")
+	menu["update"].Click(func() { go c.triggers.AutoUpdate.CheckForUpdate(ctx, false) })
+
+	if mnd.IsUnstable || (clientInfo != nil && clientInfo.User.DevAllowed) {
+		menu["unstable"] = systray.AddMenuItem("Unstable", "check Unstable website for updated version")
+		menu["unstable"].Click(func() { go c.triggers.AutoUpdate.CheckForUpdate(ctx, true) })
+	}
+
+	menu["gui"] = systray.AddMenuItem("Open WebUI", "open the web page for this Notifiarr client")
+	menu["gui"].Click(func() { c.openGUI(ctx) })
+
+	_, hasLink := ui.HasStartupLink()
+	menu["auto"] = systray.AddMenuItemCheckbox("Auto Start", "start the Notifiarr client after login", hasLink)
+	menu["auto"].Click(func() { c.autoStart(ctx) })
+	menu["sub"] = systray.AddMenuItem("Subscribe", "subscribe for premium features")
+	menu["sub"].Click(func() { ui.OpenURL(ctx, "https://github.com/sponsors/Notifiarr") })
+	menu["exit"] = systray.AddMenuItem("Quit", "exit "+c.Flags.Name())
+	menu["exit"].Click(func() {
+		logs.Log.Printf(mnd.GetID(ctx), "Need help? %s\n=====> Exiting! User Requested", mnd.HelpLink)
+		systray.Quit() // this kills the app
+	})
+}
+
+func (c *Client) configMenu(ctx context.Context) {
+	conf := systray.AddMenuItem("Config", "show configuration")
+	menu["conf"] = conf
+
+	menu["view"] = conf.AddSubMenuItem("View", "show configuration")
+	menu["view"].Click(func() {
+		ui.Info(c.displayConfig())
+	})
+
+	menu["edit"] = conf.AddSubMenuItem("Edit", "edit configuration")
+	menu["edit"].Click(func() {
+		ui.OpenFile(ctx, c.Flags.ConfigFile)
+		logs.Log.Print(mnd.GetID(ctx), "[user requested] Editing Config File:", c.Flags.ConfigFile)
+	})
+
+	menu["pass"] = conf.AddSubMenuItem("Password", "create or update the Web UI admin password")
+	menu["pass"].Click(func() { c.updatePassword(ctx) })
+
+	menu["write"] = conf.AddSubMenuItem("Write", "write config file")
+	menu["write"].Click(func() {
+		ctx, cancel := context.WithTimeout(ctx, mnd.DefaultTimeout)
+		defer cancel()
+		c.writeConfigFile(ctx)
+	})
+
+	menu["svcs"] = conf.AddSubMenuItem("Services", "toggle service checks routine")
+	menu["svcs"].Click(func() {
+		if menu["svcs"].Checked() {
+			menu["svcs"].Uncheck()
+			logs.Log.Printf(mnd.GetID(ctx), "[user requested] Pausing service checks.")
+			c.Services.Pause()
+			ui.Toast(ctx, "Paused checking services!")
+		} else {
+			logs.Log.Printf(mnd.GetID(ctx), "[user requested] Resuming service checks.")
+			menu["svcs"].Check()
+			c.Services.Resume()
+			ui.Toast(ctx, "Resumed checking services!")
+		}
+	})
+
+	menu["load"] = conf.AddSubMenuItem("Reload", "reload configuration")
+	menu["load"].Click(func() {
+		c.triggerConfigReload(website.EventUser, "User Requested")
+	})
+}
+
+func (c *Client) linksMenu(ctx context.Context) {
+	link := systray.AddMenuItem("Links", "external resources")
+	menu["link"] = link
+
+	menu["hp"] = link.AddSubMenuItem("Notifiarr.com", "open Notifiarr.com")
+	menu["hp"].Click(func() { ui.OpenURL(ctx, "https://notifiarr.com/") })
+
+	menu["wiki"] = link.AddSubMenuItem("Notifiarr.Wiki", "open Notifiarr wiki")
+	menu["wiki"].Click(func() { ui.OpenURL(ctx, "https://notifiarr.wiki/") })
+
+	menu["trash"] = link.AddSubMenuItem("TRaSH Guide", "open TRaSH wiki for Notifiarr")
+	menu["trash"].Click(func() { ui.OpenURL(ctx, "https://trash-guides.info/Notifiarr/Quick-Start/") })
+
+	menu["disc1"] = link.AddSubMenuItem("Notifiarr Discord", "open Notifiarr discord server")
+	menu["disc1"].Click(func() { ui.OpenURL(ctx, "https://notifiarr.com/discord") })
+
+	menu["disc2"] = link.AddSubMenuItem("Go Lift Discord", "open Go Lift discord server")
+	menu["disc2"].Click(func() { ui.OpenURL(ctx, "https://golift.io/discord") })
+
+	menu["gh"] = link.AddSubMenuItem("GitHub Project", c.Flags.Name()+" on GitHub")
+	menu["gh"].Click(func() { ui.OpenURL(ctx, "https://github.com/Notifiarr/notifiarr/") })
+}
+
+func (c *Client) logsMenu(ctx context.Context) {
+	logsMenu := systray.AddMenuItem("Logs", "log file info")
+	menu["logs"] = logsMenu
+
+	menu["logs_view"] = logsMenu.AddSubMenuItem("View", "view the application log")
+	menu["logs_view"].Click(func() {
+		ui.OpenLog(ctx, c.Config.LogFile)
+		logs.Log.Print(mnd.GetID(ctx), "[user requested] Viewing App Log File:", c.Config.LogFile)
+	})
+
+	menu["logs_http"] = logsMenu.AddSubMenuItem("HTTP", "view the HTTP log")
+	menu["logs_http"].Click(func() {
+		ui.OpenLog(ctx, c.Config.HTTPLog)
+		logs.Log.Print(mnd.GetID(ctx), "[user requested] Viewing HTTP Log File:", c.Config.HTTPLog)
+	})
+
+	menu["debug_logs2"] = logsMenu.AddSubMenuItem("Debug", "view the Debug log")
+	menu["debug_logs2"].Click(func() {
+		ui.OpenLog(ctx, c.Config.DebugLog)
+		logs.Log.Print(mnd.GetID(ctx), "[user requested] Viewing Debug File:", c.Config.DebugLog)
+	})
+
+	menu["logs_svcs"] = logsMenu.AddSubMenuItem("Services", "view the Services log")
+	menu["logs_svcs"].Click(func() {
+		ui.OpenLog(ctx, c.Config.Services.LogFile)
+		logs.Log.Print(mnd.GetID(ctx), "[user requested] Viewing Services Log File:", c.Config.Services.LogFile)
+	})
+
+	menu["logs_rotate"] = logsMenu.AddSubMenuItem("Rotate", "rotate both log files")
+	menu["logs_rotate"].Click(func() { c.rotateLogs(ctx) })
+}
+
+// notifiarrMenu makes the Notifiarr menu.
+//
+//nolint:lll
+func (c *Client) notifiarrMenu(ctx context.Context) {
+	data := systray.AddMenuItem("Notifiarr", "plex sessions, system snapshots, service checks")
+	menu["data"] = data
+	menu["gaps"] = data.AddSubMenuItem("Send Radarr Gaps", "[premium feature] trigger radarr collections gaps")
+	menu["synccf"] = data.AddSubMenuItem("TRaSH: Sync Radarr", "[premium feature] trigger TRaSH radarr sync")
+	menu["syncqp"] = data.AddSubMenuItem("TRaSH: Sync Sonarr", "[premium feature] trigger TRaSH sonarr sync")
+	menu["svcs_prod"] = data.AddSubMenuItem("Check and Send Services", "check all services and send results to notifiarr")
+	menu["plex_prod"] = data.AddSubMenuItem("Send Plex Sessions", "send plex sessions to notifiarr")
+	menu["snap_prod"] = data.AddSubMenuItem("Send System Snapshot", "send system snapshot to notifiarr")
+	menu["send_dash"] = data.AddSubMenuItem("Send Dashboard States", "collect and send all application states for a dashboard update")
+	menu["corrLidarr"] = data.AddSubMenuItem("Check Lidarr Corruption", "check latest backup database in each instance for corruption")
+	menu["corrProwlarr"] = data.AddSubMenuItem("Check Prowlarr Corruption", "check latest backup database in each instance for corruption")
+	menu["corrRadarr"] = data.AddSubMenuItem("Check Radarr Corruption", "check latest backup database in each instance for corruption")
+	menu["corrReadarr"] = data.AddSubMenuItem("Check Readarr Corruption", "check latest backup database in each instance for corruption")
+	menu["corrSonarr"] = data.AddSubMenuItem("Check Sonarr Corruption", "check latest backup database in each instance for corruption")
+	menu["backLidarr"] = data.AddSubMenuItem("Send Lidarr Backups", "send backup file list for each instance to Notifiarr")
+	menu["backProwlarr"] = data.AddSubMenuItem("Send Prowlarr Backups", "send backup file list for each instance to Notifiarr")
+	menu["backRadarr"] = data.AddSubMenuItem("Send Radarr Backups", "send backup file list for each instance to Notifiarr")
+	menu["backReadarr"] = data.AddSubMenuItem("Send Readarr Backups", "send backup file list for each instance to Notifiarr")
+	menu["backSonarr"] = data.AddSubMenuItem("Send Sonarr Backups", "send backup file list for each instance to Notifiarr")
+
+	c.notifiarrMenuActions(ctx)
+}
+
+func (c *Client) notifiarrMenuActions(ctx context.Context) {
+	menu["gaps"].Click(func() {
+		c.triggers.Gaps.Send(&common.ActionInput{Type: website.EventUser, ReqID: mnd.GetID(ctx)})
+	})
+	menu["synccf"].Click(func() {
+		c.triggers.CFSync.SyncRadarrCF(&common.ActionInput{Type: website.EventUser, ReqID: mnd.GetID(ctx)})
+	})
+	menu["syncqp"].Click(func() {
+		c.triggers.CFSync.SyncSonarrRP(&common.ActionInput{Type: website.EventUser, ReqID: mnd.GetID(ctx)})
+	})
+	menu["svcs_prod"].Click(func() {
+		logs.Log.Printf(mnd.GetID(ctx), "[user requested] Checking services and sending results to Notifiarr.")
+		ui.Toast(ctx, "Running and sending %d Service Checks.", c.Services.SvcCount())
+		c.Services.RunChecks(&common.ActionInput{Type: website.EventUser, ReqID: mnd.GetID(ctx)})
+	})
+	menu["plex_prod"].Click(func() {
+		c.triggers.PlexCron.Send(&common.ActionInput{Type: website.EventUser, ReqID: mnd.GetID(ctx)})
+	})
+	menu["snap_prod"].Click(func() {
+		c.triggers.SnapCron.Send(&common.ActionInput{Type: website.EventUser, ReqID: mnd.GetID(ctx)})
+	})
+	menu["send_dash"].Click(func() {
+		c.triggers.Dashboard.Send(&common.ActionInput{Type: website.EventUser, ReqID: mnd.GetID(ctx)})
+	})
+	menu["corrLidarr"].Click(func() {
+		_ = c.triggers.Backups.Corruption(&common.ActionInput{Type: website.EventUser, ReqID: mnd.GetID(ctx)}, starr.Lidarr)
+	})
+	menu["corrProwlarr"].Click(func() {
+		_ = c.triggers.Backups.Corruption(&common.ActionInput{Type: website.EventUser, ReqID: mnd.GetID(ctx)}, starr.Prowlarr)
+	})
+	menu["corrRadarr"].Click(func() {
+		_ = c.triggers.Backups.Corruption(&common.ActionInput{Type: website.EventUser, ReqID: mnd.GetID(ctx)}, starr.Radarr)
+	})
+	menu["corrReadarr"].Click(func() {
+		_ = c.triggers.Backups.Corruption(&common.ActionInput{Type: website.EventUser, ReqID: mnd.GetID(ctx)}, starr.Readarr)
+	})
+	menu["corrSonarr"].Click(func() {
+		_ = c.triggers.Backups.Corruption(&common.ActionInput{Type: website.EventUser, ReqID: mnd.GetID(ctx)}, starr.Sonarr)
+	})
+	menu["backLidarr"].Click(func() {
+		_ = c.triggers.Backups.Backup(&common.ActionInput{Type: website.EventUser, ReqID: mnd.GetID(ctx)}, starr.Lidarr)
+	})
+	menu["backProwlarr"].Click(func() {
+		_ = c.triggers.Backups.Backup(&common.ActionInput{Type: website.EventUser, ReqID: mnd.GetID(ctx)}, starr.Prowlarr)
+	})
+	menu["backRadarr"].Click(func() {
+		_ = c.triggers.Backups.Backup(&common.ActionInput{Type: website.EventUser, ReqID: mnd.GetID(ctx)}, starr.Radarr)
+	})
+	menu["backReadarr"].Click(func() {
+		_ = c.triggers.Backups.Backup(&common.ActionInput{Type: website.EventUser, ReqID: mnd.GetID(ctx)}, starr.Readarr)
+	})
+	menu["backSonarr"].Click(func() {
+		_ = c.triggers.Backups.Backup(&common.ActionInput{Type: website.EventUser, ReqID: mnd.GetID(ctx)}, starr.Sonarr)
+	})
+}
+
+func (c *Client) debugMenu(ctx context.Context) {
+	debug := systray.AddMenuItem("Debug", "Debug Menu")
+	menu["debug"] = debug
+
+	menu["debug_logs"] = debug.AddSubMenuItem("View Debug Log", "view the Debug log")
+	menu["debug_logs"].Click(func() {
+		ui.OpenLog(ctx, c.Config.DebugLog)
+		logs.Log.Print(mnd.GetID(ctx), "[user requested] Viewing Debug File:", c.Config.DebugLog)
+	})
+
+	menu["svcs_log"] = debug.AddSubMenuItem("Log Service Checks", "check all services and log results")
+	menu["svcs_log"].Click(func() {
+		logs.Log.Print(mnd.GetID(ctx), "[user requested] Checking services and logging results.")
+		ui.Toast(ctx, "Running and logging %d Service Checks.", c.Services.SvcCount())
+		c.Services.RunChecks(&common.ActionInput{Type: "log", ReqID: mnd.GetID(ctx)})
+	})
+
+	debug.AddSubMenuItem("- Danger Zone -", "").Disable()
+	menu["debug_panic"] = debug.AddSubMenuItem("Application Panic", "cause an application panic (crash)")
+	menu["debug_panic"].Click(func() { c.menuPanic(mnd.GetID(ctx)) })
+}
+
+func (c *Client) buildDynamicTimerMenus() {
+	defer logs.Log.CapturePanic()
+
+	c.closeDynamicTimerMenus()
+
+	timers := c.triggers.CronTimer.List()
+	if len(timers) == 0 {
+		return
+	}
+
+	if menu["timerinfo"] == nil {
+		menu["timerinfo"] = menu["data"].AddSubMenuItem("- Custom Timers -", "")
+	}
+
+	menu["timerinfo"].Show()
+	menu["timerinfo"].Disable()
+
+	for idx, timer := range timers {
+		desc := fmt.Sprintf("%s; config: interval: %s, path: %s", timer.Desc, timer.Interval, timer.URI)
+		if timer.Desc == "" {
+			desc = fmt.Sprintf("dynamic custom timer; config: interval: %s, path: %s", timer.Interval, timer.URI)
+		}
+
+		name := timerPrefix + timer.Name
+		if menu[name] == nil {
+			menu[name] = menu["data"].AddSubMenuItem(timer.Name, desc)
+		}
+
+		menu[name].SetTooltip(desc)
+		menu[name].Show()
+		menu[name].Click(func() { timers[idx].Run(&common.ActionInput{Type: website.EventUser, ReqID: mnd.ReqID()}) })
+	}
+}
+
+func (c *Client) closeDynamicTimerMenus() {
+	for name := range menu {
+		if menu[name] != nil && strings.HasPrefix(name, timerPrefix) {
+			menu[name].Hide()
+		}
+	}
+
+	if menu["timerinfo"] != nil {
+		// We get here on reload, and all previous timers are gone now.
+		menu["timerinfo"].Hide()
+	}
+}

@@ -1,0 +1,720 @@
+package apps
+
+import (
+	"encoding/json"
+	"fmt"
+	"net/http"
+	"strconv"
+	"strings"
+	"time"
+
+	"github.com/Notifiarr/notifiarr/pkg/mnd"
+	"github.com/gorilla/mux"
+	"golang.org/x/time/rate"
+	"golift.io/starr"
+	"golift.io/starr/debuglog"
+	"golift.io/starr/readarr"
+)
+
+// readarrHandlers is called once on startup to register the web API paths.
+func (a *Apps) readarrHandlers() {
+	a.HandleAPIpath(starr.Readarr, "/add", readarrAddBook, "POST")
+	a.HandleAPIpath(starr.Readarr, "/author/{authorid:[0-9]+}", readarrGetAuthor, "GET")
+	a.HandleAPIpath(starr.Readarr, "/check/{grid:[0-9]+}", readarrCheckBook, "GET")
+	a.HandleAPIpath(starr.Readarr, "/get/{bookid:[0-9]+}", readarrGetBook, "GET")
+	a.HandleAPIpath(starr.Readarr, "/metadataProfiles", readarrMetaProfiles, "GET")
+	a.HandleAPIpath(starr.Readarr, "/qualityProfiles", readarrQualityProfiles, "GET")
+	a.HandleAPIpath(starr.Readarr, "/qualityProfile", readarrGetQualityProfile, "GET")
+	a.HandleAPIpath(starr.Readarr, "/qualityProfile", readarrAddQualityProfile, "POST")
+	a.HandleAPIpath(starr.Readarr, "/qualityProfile/{profileID:[0-9]+}", readarrUpdateQualityProfile, "PUT")
+	a.HandleAPIpath(starr.Readarr, "/rootFolder", readarrRootFolders, "GET")
+	a.HandleAPIpath(starr.Readarr, "/search/{query}", readarrSearchBook, "GET")
+	a.HandleAPIpath(starr.Readarr, "/update", readarrUpdateBook, "PUT")
+	a.HandleAPIpath(starr.Readarr, "/tag", readarrGetTags, "GET")
+	a.HandleAPIpath(starr.Readarr, "/tag/{tid:[0-9]+}/{label}", readarrUpdateTag, "PUT")
+	a.HandleAPIpath(starr.Readarr, "/tag/{label}", readarrSetTag, "PUT")
+	a.HandleAPIpath(starr.Readarr, "/updateauthor", readarrUpdateAuthor, "PUT")
+	a.HandleAPIpath(starr.Readarr, "/command/search/{bookid:[0-9]+}", readarrTriggerSearchBook, "GET")
+	a.HandleAPIpath(starr.Readarr, "/notification", readarrGetNotifications, "GET")
+	a.HandleAPIpath(starr.Readarr, "/notification", readarrUpdateNotification, "PUT")
+	a.HandleAPIpath(starr.Readarr, "/notification", readarrAddNotification, "POST")
+	a.HandleAPIpath(starr.Readarr, "/queue/{queueID}", readarrDeleteQueue, "DELETE")
+}
+
+func getReadarr(r *http.Request) Readarr {
+	return r.Context().Value(starr.Readarr).(Readarr) //nolint:forcetypeassert
+}
+
+type Readarr struct {
+	StarrApp         `json:"-" toml:"-" xml:"-"`
+	*readarr.Readarr `json:"-" toml:"-" xml:"-"`
+}
+
+func (a *AppsConfig) setupReadarr() ([]Readarr, error) {
+	output := make([]Readarr, len(a.Readarr))
+
+	for idx := range a.Readarr {
+		app := &a.Readarr[idx]
+		if err := checkURL(app.URL, starr.Readarr.String(), idx); err != nil {
+			return nil, err
+		}
+
+		if mnd.Log.DebugEnabled() {
+			app.Client = starr.ClientWithDebug(app.Timeout.Duration, app.ValidSSL, debuglog.Config{
+				MaxBody: a.MaxBody,
+				Debugf:  func(format string, v ...any) { mnd.Log.Debugf("remote", format, v...) },
+				Caller:  metricMakerCallback(string(starr.Readarr)),
+				Redact:  []string{app.APIKey, app.Password, app.HTTPPass},
+			})
+		} else {
+			app.Client = starr.Client(app.Timeout.Duration, app.ValidSSL)
+			app.Client.Transport = NewMetricsRoundTripper(starr.Readarr.String(), app.Client.Transport)
+		}
+
+		app.URL = strings.TrimRight(app.URL, "/")
+		output[idx] = Readarr{
+			StarrConfig: a.Readarr[idx],
+			Readarr:     readarr.New(&app.Config),
+		}
+
+		if app.Deletes > 0 {
+			output[idx].delLimit = rate.NewLimiter(rate.Every(1*time.Hour/time.Duration(app.Deletes)), app.Deletes)
+		}
+	}
+
+	return output, nil
+}
+
+// @Description	Adds a new Book to Readarr.
+// @Summary		Add Readarr Book
+// @Tags			Readarr
+// @Produce		json
+// @Param			instance	path	int64					true	"instance ID"
+// @Param			POST		body	readarr.AddBookInput	true	"new item content"
+// @Success		201	{object}	APIResponse[readarr.Book]	"created"
+// @Failure		400	{object}	APIResponse[string]		"bad json payload"
+// @Failure		409	{object}	APIResponse[string]		"item already exists"
+// @Failure		422	{object}	APIResponse[string]		"no valid editions provided"
+// @Failure		503	{object}	APIResponse[string]		"instance error during check"
+// @Failure		500	{object}	APIResponse[string]		"instance error during add"
+// @Failure		404	{object}	string									"bad token or api key"
+// @Router			/readarr/{instance}/add [post]
+// @Security		ApiKeyAuth
+func readarrAddBook(req *http.Request) (int, any) {
+	payload := &readarr.AddBookInput{}
+	// Extract payload and check for GRID ID.
+	switch err := json.NewDecoder(req.Body).Decode(payload); {
+	case err != nil:
+		return apiError(http.StatusBadRequest, "decoding payload", err)
+	case len(payload.Editions) != 1:
+		return http.StatusUnprocessableEntity,
+			fmt.Errorf("invalid editions count; only 1 allowed: %d, %w", len(payload.Editions), ErrNoGRID)
+	case payload.Editions[0].ForeignEditionID == "":
+		return apiError(http.StatusUnprocessableEntity, "0", ErrNoGRID)
+	}
+
+	// Check for existing book.
+	m, err := getReadarr(req).GetBookContext(req.Context(), payload.Editions[0].ForeignEditionID)
+	if err != nil {
+		return apiError(http.StatusServiceUnavailable, "checking book", err)
+	} else if len(m) > 0 {
+		return http.StatusConflict, readarrData(m[0])
+	}
+
+	// Add book using payload.
+	book, err := getReadarr(req).AddBookContext(req.Context(), payload)
+	if err != nil {
+		return apiError(http.StatusInternalServerError, "adding book", err)
+	}
+
+	return http.StatusCreated, book
+}
+
+// @Description	Fetches an Author from Readarr.
+// @Summary		Get Readarr Author
+// @Tags			Readarr
+// @Produce		json
+// @Param			instance	path		int64										true	"instance ID"
+// @Param			authorID	path		int64										true	"author ID"
+// @Success		200			{object}	APIResponse[readarr.Author]	"author content"
+// @Failure		503			{object}	APIResponse[string]			"instance error"
+// @Failure		404			{object}	string										"bad token or api key"
+// @Router			/readarr/{instance}/author/{authorID} [get]
+// @Security		ApiKeyAuth
+func readarrGetAuthor(req *http.Request) (int, any) {
+	authorID, _ := strconv.ParseInt(mux.Vars(req)["authorid"], mnd.Base10, mnd.Bits64)
+
+	author, err := getReadarr(req).GetAuthorByIDContext(req.Context(), authorID)
+	if err != nil {
+		return apiError(http.StatusServiceUnavailable, "getting author", err)
+	}
+
+	return http.StatusOK, author
+}
+
+func readarrData(book *readarr.Book) map[string]any {
+	hasFile := false
+	if book.Statistics != nil {
+		hasFile = book.Statistics.SizeOnDisk > 0
+	}
+
+	return map[string]any{
+		"id":        book.ID,
+		"hasFile":   hasFile,
+		"monitored": book.Monitored,
+		// "tags":      book.Author.Tags,
+	}
+}
+
+// Check for existing book.
+//
+//	@Description	Checks if a book already exists in Readarr.
+//	@Summary		Check Readarr Book
+//	@Tags			Readarr
+//	@Produce		json
+//	@Param			instance	path		int64								true	"instance ID"
+//	@Param			gridID		path		int64								true	"Good Reads ID"
+//	@Success		200			{object}	APIResponse[string]	"not found"
+//	@Failure		503			{object}	APIResponse[string]	"instance error"
+//	@Failure		409			{object}	APIResponse[string]	"already exists"
+//	@Failure		404			{object}	string								"bad token or api key"
+//	@Router			/readarr/{instance}/check/{gridID} [get]
+//	@Security		ApiKeyAuth
+func readarrCheckBook(req *http.Request) (int, any) {
+	grid := mux.Vars(req)["grid"]
+
+	m, err := getReadarr(req).GetBookContext(req.Context(), grid)
+	if err != nil {
+		return apiError(http.StatusServiceUnavailable, "checking book", err)
+	} else if len(m) > 0 {
+		return http.StatusConflict, readarrData(m[0])
+	}
+
+	return http.StatusOK, http.StatusText(http.StatusNotFound)
+}
+
+// @Description	Returns a book from Readarr.
+// @Summary		Get Readarr Book
+// @Tags			Readarr
+// @Produce		json
+// @Param			instance	path		int64								true	"instance ID"
+// @Param			bookID		path		int64								true	"Book ID"
+// @Success		200			{object}	APIResponse[string]	"not found"
+// @Failure		503			{object}	APIResponse[string]	"instance error"
+// @Failure		404			{object}	string								"bad token or api key"
+// @Router			/readarr/{instance}/get/{bookID} [get]
+// @Security		ApiKeyAuth
+func readarrGetBook(req *http.Request) (int, any) {
+	bookID, _ := strconv.ParseInt(mux.Vars(req)["bookid"], mnd.Base10, mnd.Bits64)
+
+	book, err := getReadarr(req).GetBookByIDContext(req.Context(), bookID)
+	if err != nil {
+		return apiError(http.StatusServiceUnavailable, "checking book", err)
+	}
+
+	return http.StatusOK, book
+}
+
+func readarrTriggerSearchBook(req *http.Request) (int, any) {
+	bookID, _ := strconv.ParseInt(mux.Vars(req)["bookid"], mnd.Base10, mnd.Bits64)
+
+	output, err := getReadarr(req).SendCommandContext(req.Context(), &readarr.CommandRequest{
+		Name:    "BookSearch",
+		BookIDs: []int64{bookID},
+	})
+	if err != nil {
+		return apiError(http.StatusServiceUnavailable, "checking book", err)
+	}
+
+	return http.StatusOK, output.Status
+}
+
+// Get the metadata profiles from readarr.
+//
+//	@Description	Fetches all Metadata Profiles from Readarr.
+//	@Summary		Get Readarr Metadata Profiles
+//	@Tags			Readarr
+//	@Produce		json
+//	@Param			instance	path		int64										true	"instance ID"
+//	@Success		200			{object}	APIResponse[map[int64]string]	"map of ID to name"
+//	@Failure		500			{object}	APIResponse[string]			"instance error"
+//	@Failure		404			{object}	string										"bad token or api key"
+//	@Router			/readarr/{instance}/metadataProfiles [get]
+//	@Security		ApiKeyAuth
+func readarrMetaProfiles(req *http.Request) (int, any) {
+	profiles, err := getReadarr(req).GetMetadataProfilesContext(req.Context())
+	if err != nil {
+		return apiError(http.StatusInternalServerError, "getting profiles", err)
+	}
+
+	// Format profile ID=>Name into a nice map.
+	p := make(map[int64]string)
+	for i := range profiles {
+		p[profiles[i].ID] = profiles[i].Name
+	}
+
+	return http.StatusOK, p
+}
+
+// Get the quality profiles from readarr.
+//
+//	@Description	Fetches all Quality Profiles from Readarr.
+//	@Summary		Get Readarr Quality Profiles
+//	@Tags			Readarr
+//	@Produce		json
+//	@Param			instance	path		int64										true	"instance ID"
+//	@Success		200			{object}	APIResponse[map[int64]string]	"map of ID to name"
+//	@Failure		500			{object}	APIResponse[string]			"instance error"
+//	@Failure		404			{object}	string										"bad token or api key"
+//	@Router			/readarr/{instance}/qualityProfiles [get]
+//	@Security		ApiKeyAuth
+func readarrQualityProfiles(req *http.Request) (int, any) {
+	profiles, err := getReadarr(req).GetQualityProfilesContext(req.Context())
+	if err != nil {
+		return apiError(http.StatusInternalServerError, "getting profiles", err)
+	}
+
+	// Format profile ID=>Name into a nice map.
+	p := make(map[int64]string)
+	for i := range profiles {
+		p[profiles[i].ID] = profiles[i].Name
+	}
+
+	return http.StatusOK, p
+}
+
+// Get the all quality profiles data from readarr.
+//
+//	@Description	Fetches all Quality Profiles Data from Readarr.
+//	@Summary		Get Readarr Quality Profile Data
+//	@Tags			Readarr
+//	@Produce		json
+//	@Param			instance	path		int64												true	"instance ID"
+//	@Success		200			{object}	APIResponse[[]readarr.QualityProfile]	"all profiles"
+//	@Failure		500			{object}	APIResponse[string]					"instance error"
+//	@Failure		404			{object}	string												"bad token or api key"
+//	@Router			/readarr/{instance}/qualityProfile [get]
+//	@Security		ApiKeyAuth
+func readarrGetQualityProfile(req *http.Request) (int, any) {
+	profiles, err := getReadarr(req).GetQualityProfilesContext(req.Context())
+	if err != nil {
+		return apiError(http.StatusInternalServerError, "getting profiles", err)
+	}
+
+	return http.StatusOK, profiles
+}
+
+// @Description	Creates a new Readarr Quality Profile.
+// @Summary		Add Readarr Quality Profile
+// @Tags			Readarr
+// @Produce		json
+// @Param			instance	path		int64								true	"instance ID"
+// @Param			POST		body		readarr.QualityProfile				true	"new item content"
+// @Success		200			{object}	APIResponse[int64]		"new profile ID"
+// @Failure		400			{object}	APIResponse[string]	"json input error"
+// @Failure		500			{object}	APIResponse[string]	"instance error"
+// @Failure		404			{object}	string								"bad token or api key"
+// @Router			/readarr/{instance}/qualityProfile [post]
+// @Security		ApiKeyAuth
+func readarrAddQualityProfile(req *http.Request) (int, any) {
+	var profile readarr.QualityProfile
+
+	// Extract payload and check for TMDB ID.
+	err := json.NewDecoder(req.Body).Decode(&profile)
+	if err != nil {
+		return apiError(http.StatusBadRequest, "decoding payload", err)
+	}
+
+	// Get the profiles from readarr.
+	id, err := getReadarr(req).AddQualityProfileContext(req.Context(), &profile)
+	if err != nil {
+		return apiError(http.StatusInternalServerError, "adding profile", err)
+	}
+
+	return http.StatusOK, id
+}
+
+// @Description	Updates a Readarr Quality Profile.
+// @Summary		Update Readarr Quality Profile
+// @Tags			Readarr
+// @Produce		json
+// @Param			instance	path		int64								true	"instance ID"
+// @Param			profileID	path		int64								true	"profile ID to update"
+// @Param			PUT			body		readarr.QualityProfile				true	"updated item content"
+// @Success		200			{object}	string								"ok"
+// @Failure		400			{object}	APIResponse[string]	"json input error"
+// @Failure		422			{object}	APIResponse[string]	"no profile ID"
+// @Failure		500			{object}	APIResponse[string]	"instance error"
+// @Failure		404			{object}	string								"bad token or api key"
+// @Router			/readarr/{instance}/qualityProfile/{profileID} [put]
+// @Security		ApiKeyAuth
+func readarrUpdateQualityProfile(req *http.Request) (int, any) {
+	var profile readarr.QualityProfile
+
+	// Extract payload and check for TMDB ID.
+	err := json.NewDecoder(req.Body).Decode(&profile)
+	if err != nil {
+		return apiError(http.StatusBadRequest, "decoding payload", err)
+	}
+
+	profile.ID, _ = strconv.ParseInt(mux.Vars(req)["profileID"], mnd.Base10, mnd.Bits64)
+	if profile.ID == 0 {
+		return http.StatusUnprocessableEntity, ErrNonZeroID
+	}
+
+	// Get the profiles from readarr.
+	_, err = getReadarr(req).UpdateQualityProfileContext(req.Context(), &profile)
+	if err != nil {
+		return apiError(http.StatusInternalServerError, "updating profile", err)
+	}
+
+	return http.StatusOK, "OK"
+}
+
+// Get folder list from Readarr.
+//
+//	@Description	Returns all Readarr Root Folders paths and free space.
+//	@Summary		Retrieve Readarr Root Folders
+//	@Tags			Readarr
+//	@Produce		json
+//	@Param			instance	path		int64										true	"instance ID"
+//	@Success		200			{object}	APIResponse[map[string]int64]	"map of path->space free"
+//	@Failure		500			{object}	APIResponse[string]			"instance error"
+//	@Failure		404			{object}	string										"bad token or api key"
+//	@Router			/readarr/{instance}/rootFolder [get]
+//	@Security		ApiKeyAuth
+func readarrRootFolders(req *http.Request) (int, any) {
+	folders, err := getReadarr(req).GetRootFoldersContext(req.Context())
+	if err != nil {
+		return apiError(http.StatusInternalServerError, "getting folders", err)
+	}
+
+	// Format folder list into a nice path=>freesSpace map.
+	p := make(map[string]int64)
+	for i := range folders {
+		p[folders[i].Path] = folders[i].FreeSpace
+	}
+
+	return http.StatusOK, p
+}
+
+// @Description	Searches all Book Titles for the search term provided.
+// @Summary		Search for Readarr Books
+// @Tags			Readarr
+// @Produce		json
+// @Param			query		path		string														true	"title search string"
+// @Param			instance	path		int64														true	"instance ID"
+// @Success		200			{object}	APIResponse[[]apps.readarrSearchBook.bookData]	"minimal book data"
+// @Failure		503			{object}	APIResponse[string]							"instance error"
+// @Failure		404			{object}	string														"bad token or api key"
+// @Router			/readarr/{instance}/search/{query} [get]
+// @Security		ApiKeyAuth
+func readarrSearchBook(req *http.Request) (int, any) {
+	books, err := getReadarr(req).GetBookContext(req.Context(), "")
+	if err != nil {
+		return apiError(http.StatusServiceUnavailable, "getting books", err)
+	}
+
+	type bookData struct {
+		// Book ID
+		ID int64 `json:"id"`
+		// Book Title
+		Title string `json:"title"`
+		// Release Date
+		Release time.Time `json:"release"`
+		// Author ID
+		AuthorID int64 `json:"authorId"`
+		// Author Name
+		Author string `json:"author"`
+		// Book Overview
+		Overview string `json:"overview"`
+		// Rating Value
+		Ratings float64 `json:"ratings"`
+		// Book Page count
+		Pages int `json:"pages"`
+		// Exists on disk or not?
+		Exists bool `json:"exists"`
+		// Number of files on disk for this book.
+		Files int `json:"files"`
+	}
+
+	query := strings.TrimSpace(strings.ToLower(mux.Vars(req)["query"])) // in
+	returnBooks := make([]*bookData, 0)                                 // out
+
+	for _, book := range books {
+		if bookSearch(query, book.Title, book.Editions) {
+			item := &bookData{
+				ID:       book.ID,
+				Title:    book.Title,
+				Release:  book.ReleaseDate,
+				Author:   book.AuthorTitle,
+				AuthorID: book.AuthorID,
+				Overview: book.Overview,
+				Ratings:  book.Ratings.Value,
+				Pages:    book.PageCount,
+			}
+
+			if book.Statistics != nil {
+				item.Files = book.Statistics.BookFileCount
+				item.Exists = book.Statistics.SizeOnDisk > 0
+			}
+
+			returnBooks = append(returnBooks, item)
+		}
+	}
+
+	return http.StatusOK, returnBooks
+}
+
+func bookSearch(query, title string, editions []*readarr.Edition) bool {
+	if strings.Contains(strings.ToLower(title), query) {
+		return true
+	}
+
+	for _, t := range editions {
+		if strings.Contains(strings.ToLower(t.Title), query) {
+			return true
+		}
+	}
+
+	return false
+}
+
+// @Description	Returns all Readarr Tags
+// @Summary		Retrieve Readarr Tags
+// @Tags			Readarr
+// @Produce		json
+// @Param			instance	path		int64									true	"instance ID"
+// @Success		200			{object}	APIResponse[[]starr.Tag]	"tags"
+// @Failure		503			{object}	APIResponse[string]		"instance error"
+// @Failure		404			{object}	string									"bad token or api key"
+// @Router			/readarr/{instance}/tag [get]
+// @Security		ApiKeyAuth
+func readarrGetTags(req *http.Request) (int, any) {
+	tags, err := getReadarr(req).GetTagsContext(req.Context())
+	if err != nil {
+		return apiError(http.StatusServiceUnavailable, "getting tags", err)
+	}
+
+	return http.StatusOK, tags
+}
+
+// @Description	Updates the label for a an existing tag.
+// @Summary		Update Readarr Tag Label
+// @Tags			Readarr
+// @Produce		json
+// @Param			instance	path		int64								true	"instance ID"
+// @Param			tagID		path		int64								true	"tag ID to update"
+// @Param			label		path		string								true	"new label"
+// @Success		200			{object}	APIResponse[int64]		"tag ID"
+// @Failure		503			{object}	APIResponse[string]	"instance error"
+// @Failure		404			{object}	string								"bad token or api key"
+// @Router			/readarr/{instance}/tag/{tagID}/{label} [put]
+// @Security		ApiKeyAuth
+func readarrUpdateTag(req *http.Request) (int, any) {
+	id, _ := strconv.Atoi(mux.Vars(req)["tid"])
+
+	tag, err := getReadarr(req).UpdateTagContext(req.Context(), &starr.Tag{ID: id, Label: mux.Vars(req)["label"]})
+	if err != nil {
+		return apiError(http.StatusServiceUnavailable, "updating tag", err)
+	}
+
+	return http.StatusOK, tag.ID
+}
+
+// @Description	Creates a new tag with the provided label.
+// @Summary		Create Readarr Tag
+// @Tags			Readarr
+// @Produce		json
+// @Param			instance	path		int64								true	"instance ID"
+// @Param			label		path		string								true	"new tag's label"
+// @Success		200			{object}	APIResponse[int64]		"tag ID"
+// @Failure		503			{object}	APIResponse[string]	"instance error"
+// @Failure		404			{object}	string								"bad token or api key"
+// @Router			/readarr/{instance}/tag/{label} [put]
+// @Security		ApiKeyAuth
+func readarrSetTag(req *http.Request) (int, any) {
+	tag, err := getReadarr(req).AddTagContext(req.Context(), &starr.Tag{Label: mux.Vars(req)["label"]})
+	if err != nil {
+		return apiError(http.StatusServiceUnavailable, "setting tag", err)
+	}
+
+	return http.StatusOK, tag.ID
+}
+
+// @Description	Updates a Book in Readarr.
+// @Summary		Update Readarr Book
+// @Tags			Readarr
+// @Produce		json
+// @Param			instance	path		int64								true	"instance ID"
+// @Param			moveFiles	query		int64								true	"move files? true/false"
+// @Param			PUT			body		readarr.Book						true	"book content"
+// @Success		200			{object}	APIResponse[string]	"ok"
+// @Failure		400			{object}	APIResponse[string]	"bad json input"
+// @Failure		503			{object}	APIResponse[string]	"instance error"
+// @Failure		404			{object}	string								"bad token or api key"
+// @Router			/readarr/{instance}/update [put]
+// @Security		ApiKeyAuth
+func readarrUpdateBook(req *http.Request) (int, any) {
+	var book readarr.Book
+
+	err := json.NewDecoder(req.Body).Decode(&book)
+	if err != nil {
+		return apiError(http.StatusBadRequest, "decoding payload", err)
+	}
+
+	moveFiles := mux.Vars(req)["moveFiles"] == strconv.FormatBool(true)
+
+	err = getReadarr(req).UpdateBookContext(req.Context(), book.ID, &book, moveFiles)
+	if err != nil {
+		return apiError(http.StatusServiceUnavailable, "updating book", err)
+	}
+
+	return http.StatusOK, "readarr seems to have worked"
+}
+
+// @Description	Updates an Author in Readarr.
+// @Summary		Update Readarr Author
+// @Tags			Readarr
+// @Produce		json
+// @Param			instance	path		int64								true	"instance ID"
+// @Param			PUT			body		readarr.Author						true	"author content"
+// @Success		200			{object}	APIResponse[string]	"ok"
+// @Failure		400			{object}	APIResponse[string]	"bad json input"
+// @Failure		503			{object}	APIResponse[string]	"instance error"
+// @Failure		404			{object}	string								"bad token or api key"
+// @Router			/readarr/{instance}/updateauthor [put]
+// @Security		ApiKeyAuth
+func readarrUpdateAuthor(req *http.Request) (int, any) {
+	var author readarr.Author
+
+	err := json.NewDecoder(req.Body).Decode(&author)
+	if err != nil {
+		return apiError(http.StatusBadRequest, "decoding payload", err)
+	}
+
+	_, err = getReadarr(req).UpdateAuthorContext(req.Context(), &author, true)
+	if err != nil {
+		return apiError(http.StatusServiceUnavailable, "updating author", err)
+	}
+
+	return http.StatusOK, "readarr seems to have worked"
+}
+
+// @Description	Returns Readarr Notifications with a name that matches 'notifiar'.
+// @Summary		Retrieve Readarr Notifications
+// @Tags			Readarr
+// @Produce		json
+// @Param			instance	path		int64													true	"instance ID"
+// @Success		200			{object}	APIResponse[[]readarr.NotificationOutput]	"notifications"
+// @Failure		503			{object}	APIResponse[string]						"instance error"
+// @Failure		404			{object}	string													"bad token or api key"
+// @Router			/readarr/{instance}/notifications [get]
+// @Security		ApiKeyAuth
+func readarrGetNotifications(req *http.Request) (int, any) {
+	notifs, err := getReadarr(req).GetNotificationsContext(req.Context())
+	if err != nil {
+		return apiError(http.StatusServiceUnavailable, "getting notifications", err)
+	}
+
+	output := []*readarr.NotificationOutput{}
+
+	for _, notif := range notifs {
+		if strings.Contains(strings.ToLower(notif.Name), "notifiar") {
+			output = append(output, notif)
+		}
+	}
+
+	return http.StatusOK, output
+}
+
+// @Description	Updates a Notification in Readarr.
+// @Summary		Update Readarr Notification
+// @Tags			Readarr
+// @Produce		json
+// @Param			instance	path		int64								true	"instance ID"
+// @Param			PUT			body		readarr.NotificationInput			true	"notification content"
+// @Success		200			{object}	APIResponse[string]	"ok"
+// @Failure		400			{object}	APIResponse[string]	"bad json input"
+// @Failure		503			{object}	APIResponse[string]	"instance error"
+// @Failure		404			{object}	string								"bad token or api key"
+// @Router			/readarr/{instance}/notification [put]
+// @Security		ApiKeyAuth
+func readarrUpdateNotification(req *http.Request) (int, any) {
+	var notif readarr.NotificationInput
+
+	err := json.NewDecoder(req.Body).Decode(&notif)
+	if err != nil {
+		return apiError(http.StatusBadRequest, "decoding payload", err)
+	}
+
+	_, err = getReadarr(req).UpdateNotificationContext(req.Context(), &notif)
+	if err != nil {
+		return apiError(http.StatusServiceUnavailable, "updating notification", err)
+	}
+
+	return http.StatusOK, mnd.Success
+}
+
+// @Description	Creates a new Readarr Notification.
+// @Summary		Add Readarr Notification
+// @Tags			Readarr
+// @Produce		json
+// @Param			instance	path		int64								true	"instance ID"
+// @Param			POST		body		readarr.NotificationInput			true	"new item content"
+// @Success		200			{object}	APIResponse[int64]		"new notification ID"
+// @Failure		400			{object}	APIResponse[string]	"json input error"
+// @Failure		503			{object}	APIResponse[string]	"instance error"
+// @Failure		404			{object}	string								"bad token or api key"
+// @Router			/readarr/{instance}/notification [post]
+// @Security		ApiKeyAuth
+func readarrAddNotification(req *http.Request) (int, any) {
+	var notif readarr.NotificationInput
+
+	err := json.NewDecoder(req.Body).Decode(&notif)
+	if err != nil {
+		return apiError(http.StatusBadRequest, "decoding payload", err)
+	}
+
+	id, err := getReadarr(req).AddNotificationContext(req.Context(), &notif)
+	if err != nil {
+		return apiError(http.StatusServiceUnavailable, "adding notification", err)
+	}
+
+	return http.StatusOK, id
+}
+
+// @Description	Delete items from the activity queue.
+// @Summary		Delete Queue Items
+// @Tags			Readarr
+// @Produce		json
+// @Param			instance			path		int64								true	"instance ID"
+// @Param			queueID				path		int64								true	"queue ID to delete"
+// @Param			removeFromClient	query		bool								false	"remove download from download client?"
+// @Param			blocklist			query		bool								false	"add item to blocklist?"
+// @Param			skipRedownload		query		bool								false	"skip downloading this again?"
+// @Param			changeCategory		query		bool								false	"tell download client to change categories?"
+// @Success		200					{object}	APIResponse[string]	"ok"
+// @Failure		500					{object}	APIResponse[string]	"instance error"
+// @Failure		404					{object}	string								"bad token or api key"
+// @Failure		423					{object}	string								"rate limit reached"
+// @Router			/readarr/{instance}/queue/{queueID} [delete]
+// @Security		ApiKeyAuth
+func readarrDeleteQueue(req *http.Request) (int, any) {
+	idString := mux.Vars(req)["queueID"]
+	queueID, _ := strconv.ParseInt(idString, mnd.Base10, mnd.Bits64)
+	removeFromClient := req.URL.Query().Get("removeFromClient") == mnd.True
+	opts := &starr.QueueDeleteOpts{
+		RemoveFromClient: &removeFromClient,
+		BlockList:        req.URL.Query().Get("blocklist") == mnd.True,
+		SkipRedownload:   req.URL.Query().Get("skipRedownload") == mnd.True,
+		ChangeCategory:   req.URL.Query().Get("changeCategory") == mnd.True,
+	}
+
+	err := getReadarr(req).DeleteQueueContext(req.Context(), queueID, opts)
+	if err != nil {
+		return apiError(http.StatusInternalServerError, "deleting queue", err)
+	}
+
+	return http.StatusOK, mnd.Deleted + idString
+}

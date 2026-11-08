@@ -1,0 +1,81 @@
+<script lang="ts" module>
+  import X from 'phosphor-svelte/lib/X'
+  import ListChecks from 'phosphor-svelte/lib/ListChecks'
+  import SquaresFour from 'phosphor-svelte/lib/SquaresFour'
+
+  export const page = { id: 'Actions' }
+</script>
+
+<script lang="ts">
+  import { theme as thm } from '../../includes/theme.svelte'
+  import { Button, CardBody, Input, InputGroup, Popover } from '@sveltestrap/sveltestrap'
+  import Header from '../../includes/Header.svelte'
+  import { profile } from '../../api/profile.svelte'
+  import Triggers from './Triggers.svelte'
+  import Fa from '../../includes/Fa.svelte'
+  import Cookies from 'js-cookie'
+  import TableView from './TableView.svelte'
+  import T, { _ } from '../../includes/Translate.svelte'
+  import type { TriggerInfo } from '../../api/notifiarrConfig'
+  import { val } from './run'
+  import { slide } from 'svelte/transition'
+
+  const toggleCards = () =>
+    Cookies.set('showActionCards', (showCards = !showCards).toString())
+  let showCards = $state(Cookies.get('showActionCards') === 'true')
+  const icon = $derived(showCards ? ListChecks : SquaresFour)
+
+  let filter = $state('')
+
+  const sift = (rows?: TriggerInfo[] | null): TriggerInfo[] =>
+    rows?.filter(row => val(row).toLowerCase().includes(filter.toLowerCase())) ?? []
+</script>
+
+<Header {page}>
+  <InputGroup>
+    {#if filter}
+      <Button color="warning" outline onclick={() => (filter = '')}>
+        <Fa i={X} scale="1.2" />
+      </Button>
+    {/if}
+    <!-- Filter input. Clear button is above.-->
+    <Input bind:value={filter} placeholder={$_('Actions.titles.Filter')} />
+    <!-- Toggle cards view. -->
+    <Button color="info" outline onclick={toggleCards} id="cards-btn">
+      <Fa i={icon} c1="lightblue" d1="slateblue" btn />
+    </Button>
+    <Popover target="cards-btn" placement="left" trigger="hover" theme={$thm}>
+      <T id={`monitoring.${showCards ? 'classicView' : 'cardsView'}`} />
+    </Popover>
+  </InputGroup>
+</Header>
+
+{#if showCards}
+  <div transition:slide>
+    <CardBody class="py-0">
+      <Triggers type="Timers" rows={sift($profile.timers)} />
+      <Triggers type="Schedules" rows={sift($profile.schedules)} />
+      <Triggers type="Triggers" rows={sift($profile.triggers)} />
+    </CardBody>
+  </div>
+{:else}
+  <div transition:slide>
+    <TableView
+      rows={[
+        sift($profile.timers),
+        sift($profile.schedules),
+        sift($profile.triggers),
+      ].flat()} />
+  </div>
+{/if}
+
+<style>
+  :global(#cards-btn) {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 2.5rem;
+    padding-left: 0;
+    padding-right: 0;
+  }
+</style>

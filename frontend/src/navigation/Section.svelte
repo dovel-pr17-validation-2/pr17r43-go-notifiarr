@@ -1,0 +1,42 @@
+<script lang="ts">
+  import { Nav, NavItem, NavLink } from '@sveltestrap/sveltestrap'
+  import { nav, type Page } from './nav.svelte'
+  import { urlbase } from '../api/fetch'
+  import { _ } from '../includes/Translate.svelte'
+  import { theme } from '../includes/theme.svelte'
+
+  type Props = { title: string; pages: Page[] }
+
+  const { title, pages }: Props = $props()
+</script>
+
+<p class="nav-header">{$_('navigation.titles.' + title)}</p>
+<div class="nav-section">
+  <Nav vertical pills class="nav-custom" theme={$theme}>
+    {#each pages as page}
+      <NavItem>
+        <NavLink
+          href={$urlbase + (page.path ?? page.id)}
+          class="nav-link-custom"
+          active={nav.active(page.path ?? page.id)}
+          disabled={nav.active(page.path ?? page.id)}
+          onclick={e => nav.goto(e, page.path ?? page.id)}>
+          {$_('navigation.titles.' + page.id)}
+        </NavLink>
+      </NavItem>
+    {/each}
+  </Nav>
+</div>
+
+<style>
+  .nav-header {
+    font-weight: 600;
+    font-size: 12px;
+    text-transform: uppercase;
+    color: lightslategray;
+    margin-top: 5px;
+    margin-bottom: 8px;
+    padding-left: 8px;
+    letter-spacing: 0.5px;
+  }
+</style>

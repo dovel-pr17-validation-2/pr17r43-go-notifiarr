@@ -1,0 +1,124 @@
+package snapcron
+
+import (
+	"context"
+	"fmt"
+	"time"
+
+	"github.com/Notifiarr/notifiarr/pkg/mnd"
+	"github.com/Notifiarr/notifiarr/pkg/triggers/common"
+	"github.com/Notifiarr/notifiarr/pkg/triggers/data"
+	"github.com/Notifiarr/notifiarr/pkg/website"
+	"golift.io/cnfg"
+)
+
+const TrigSnapshot common.TriggerName = "Gathering and sending System Snapshot."
+
+const randomMilliseconds = 4000
+
+// Action contains the exported methods for this package.
+type Action struct {
+	cmd *cmd
+}
+
+type cmd struct {
+	*common.Config
+}
+
+// New configures the library.
+func New(config *common.Config) *Action {
+	return &Action{cmd: &cmd{Config: config}}
+}
+
+// Create initializes the library.
+func (a *Action) Create() {
+	reqID := mnd.ReqID()
+	a.cmd.create(reqID)
+}
+
+// Send a snapshot to the website.
+func (a *Action) Send(input *common.ActionInput) {
+	a.cmd.Exec(input, TrigSnapshot)
+}
+
+func (c *cmd) create(reqID string) {
+	var dur time.Duration
+
+	if c.Snapshot.Interval.Duration > 0 {
+		randomTime := time.Duration(c.Config.Rand().Intn(randomMilliseconds)) * time.Millisecond
+		dur = c.Snapshot.Interval.Duration + randomTime
+	}
+
+	c.printLog(reqID)
+	c.Add(&common.Action{
+		Key:  "TrigSnapshot",
+		Name: TrigSnapshot,
+		Fn:   c.sendSnapshot,
+		C:    make(chan *common.ActionInput, 1),
+		D:    cnfg.Duration{Duration: dur},
+	})
+}
+
+func (c *cmd) printLog(reqID string) {
+	var enabled string
+
+	for key, val := range map[string]bool{
+		"cpu, load, memory, uptime, users, temps": true,
+		"raid":     c.Snapshot.Raid,
+		"disks":    c.Snapshot.DiskUsage,
+		"quota":    c.Snapshot.Quotas,
+		"drives":   c.Snapshot.DriveData,
+		"ipmi":     c.Snapshot.IPMI && !c.Snapshot.IPMISudo,
+		"ipmiSudo": c.Snapshot.IPMI && c.Snapshot.IPMISudo,
+		"iotop":    c.Snapshot.IOTop > 0,
+		"pstop":    c.Snapshot.PSTop > 0,
+		"mysql":    len(c.Snapshot.MySQL) > 0,
+		"zfs":      len(c.Snapshot.ZFSPools) > 0,
+		"sudo":     c.Snapshot.UseSudo && c.Snapshot.DriveData,
+	} {
+		if !val {
+			continue
+		}
+
+		if enabled != "" {
+			enabled += ", "
+		}
+
+		enabled += key
+	}
+
+	if c.Snapshot.Interval.Duration == 0 {
+		mnd.Log.Printf(reqID, "==> System Snapshot Collection Disabled, timeout: %v, configured: %s",
+			c.Snapshot.Timeout, enabled)
+		return
+	}
+
+	mnd.Log.Printf(reqID, "==> System Snapshot Collection Started, interval: %v, timeout: %v, enabled: %s",
+		c.Snapshot.Interval, c.Snapshot.Timeout, enabled)
+}
+
+func (c *cmd) sendSnapshot(ctx context.Context, input *common.ActionInput) {
+	snapshot, errs, debug := c.Snapshot.GetSnapshot(ctx)
+	for _, err := range errs {
+		if err != nil {
+			mnd.Log.ErrorfNoShare(input.ReqID, "[%s requested] Snapshot: %v", input.Type, err)
+		}
+	}
+
+	// These debug messages are mostly just errors that we expect to have.
+	for _, err := range debug {
+		if err != nil {
+			mnd.Log.Debugf(input.ReqID, "Snapshot: %v", err)
+		}
+	}
+
+	data.Save("snapshot", snapshot)
+	website.SendData(&website.Request{
+		ReqID:      input.ReqID,
+		Route:      website.SnapRoute,
+		Event:      input.Type,
+		LogPayload: true,
+		LogMsg:     fmt.Sprintf("System Snapshot (interval: %v)", c.Snapshot.Interval),
+		Payload:    &website.Payload{Snap: snapshot},
+	})
+}

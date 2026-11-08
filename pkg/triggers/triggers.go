@@ -1,0 +1,196 @@
+// Package triggers provides a simple interface to setup all sub-module triggers.
+// Adding a new trigger here should be two new lines of code and a new import.
+package triggers
+
+import (
+	"context"
+	"os"
+	"reflect"
+
+	"github.com/Notifiarr/notifiarr/pkg/apps"
+	"github.com/Notifiarr/notifiarr/pkg/logs"
+	"github.com/Notifiarr/notifiarr/pkg/mnd"
+	"github.com/Notifiarr/notifiarr/pkg/snapshot"
+	"github.com/Notifiarr/notifiarr/pkg/triggers/autoupdate"
+	"github.com/Notifiarr/notifiarr/pkg/triggers/backups"
+	"github.com/Notifiarr/notifiarr/pkg/triggers/cfsync"
+	"github.com/Notifiarr/notifiarr/pkg/triggers/commands"
+	"github.com/Notifiarr/notifiarr/pkg/triggers/common"
+	"github.com/Notifiarr/notifiarr/pkg/triggers/crontimer"
+	"github.com/Notifiarr/notifiarr/pkg/triggers/dashboard"
+	"github.com/Notifiarr/notifiarr/pkg/triggers/data"
+	"github.com/Notifiarr/notifiarr/pkg/triggers/emptytrash"
+	"github.com/Notifiarr/notifiarr/pkg/triggers/endpoints"
+	"github.com/Notifiarr/notifiarr/pkg/triggers/endpoints/epconfig"
+	"github.com/Notifiarr/notifiarr/pkg/triggers/fileupload"
+	"github.com/Notifiarr/notifiarr/pkg/triggers/filewatch"
+	"github.com/Notifiarr/notifiarr/pkg/triggers/gaps"
+	"github.com/Notifiarr/notifiarr/pkg/triggers/mdblist"
+	"github.com/Notifiarr/notifiarr/pkg/triggers/plexcron"
+	"github.com/Notifiarr/notifiarr/pkg/triggers/snapcron"
+	"github.com/Notifiarr/notifiarr/pkg/triggers/starrqueue"
+	"github.com/Notifiarr/notifiarr/pkg/website"
+	"github.com/Notifiarr/notifiarr/pkg/website/clientinfo"
+	"github.com/go-co-op/gocron/v2"
+)
+
+// Config is the required input data. Everything is mandatory.
+type Config struct {
+	Apps       *apps.Apps
+	Snapshot   *snapshot.Config
+	WatchFiles []*filewatch.WatchFile
+	Endpoints  []*epconfig.Endpoint
+	LogFiles   []string
+	Commands   []*commands.Command
+	ClientInfo *clientinfo.Config
+	ConfigFile string
+	AutoUpdate string
+	UnstableCh bool
+	common.Services
+}
+
+// Actions defines all our triggers and timers.
+// Any action here will automatically have its interface methods called.
+type Actions struct {
+	*common.Config
+	AutoUpdate *autoupdate.Action
+	Backups    *backups.Action
+	CFSync     *cfsync.Action
+	Commands   *commands.Action
+	CronTimer  *crontimer.Action
+	Dashboard  *dashboard.Action
+	EmptyTrash *emptytrash.Action
+	FileUpload *fileupload.Action
+	FileWatch  *filewatch.Action
+	Gaps       *gaps.Action
+	MDbList    *mdblist.Action
+	Endpoints  *endpoints.Action
+	PlexCron   *plexcron.Action
+	SnapCron   *snapcron.Action
+	StarrQueue *starrqueue.Action
+	inCh       chan inChData
+	outCh      chan string
+}
+
+// New turns a populated Config into a pile of Actions.
+func New(ctx context.Context, config *Config) *Actions {
+	common := &common.Config{
+		Snapshot: config.Snapshot,
+		Apps:     config.Apps,
+		CI:       config.ClientInfo,
+		Services: config.Services,
+	}
+	common.Scheduler, _ = gocron.NewScheduler()
+	plex := plexcron.New(common, &config.Apps.Plex)
+
+	actions := &Actions{
+		AutoUpdate: autoupdate.New(common, config.AutoUpdate, config.ConfigFile, config.UnstableCh),
+		Backups:    backups.New(common),
+		CFSync:     cfsync.New(common),
+		Commands:   commands.New(common, config.Commands),
+		Config:     common,
+		CronTimer:  crontimer.New(common),
+		Dashboard:  dashboard.New(common, plex),
+		EmptyTrash: emptytrash.New(common),
+		FileUpload: fileupload.New(common),
+		FileWatch:  filewatch.New(common, config.WatchFiles, config.LogFiles),
+		Gaps:       gaps.New(common),
+		MDbList:    mdblist.New(common),
+		Endpoints:  endpoints.New(common, config.Endpoints),
+		PlexCron:   plex,
+		SnapCron:   snapcron.New(common),
+		StarrQueue: starrqueue.New(common),
+		inCh:       make(chan inChData),
+		outCh:      make(chan string),
+	}
+
+	go actions.watchChan(ctx)
+
+	return actions
+}
+
+// These methods use reflection so they never really need to be updated.
+// They execute all Create(), Run() and Stop() procedures defined in our Actions.
+
+// Start creates all the triggers and runs the timers.
+func (a *Actions) Start(ctx context.Context, reloadCh, stopCh chan os.Signal) {
+	if reloadCh != nil {
+		a.SetReloadCh(reloadCh)
+	}
+
+	if stopCh != nil {
+		a.SetStopCh(stopCh)
+	}
+
+	defer a.Run(ctx)
+
+	actions := reflect.ValueOf(a).Elem()
+	for _, field := range actions.Fields() {
+		if !field.CanInterface() {
+			continue
+		}
+
+		// A panic here means you screwed up the code somewhere else.
+		if action, ok := reflect.TypeAssert[common.Create](field); ok {
+			action.Create()
+		}
+		// No 'else if' so you can have both if you need them.
+		if action, ok := reflect.TypeAssert[common.Run](field); ok {
+			go action.Run(ctx)
+		}
+	}
+}
+
+// Stop all internal cron timers and Triggers.
+func (a *Actions) Stop(event website.EventType) context.Context {
+	ctx := a.Config.Stop(event)
+
+	actions := reflect.ValueOf(a).Elem()
+	// Stop them in reverse order they were started.
+	for _, field := range actions.Fields() {
+		if !field.CanInterface() {
+			continue
+		}
+
+		if action, ok := reflect.TypeAssert[common.Run](field); ok {
+			action.Stop()
+		}
+	}
+
+	return ctx
+}
+
+type inChData struct {
+	website.EventType
+	*clientinfo.Actions
+	ReqID string
+}
+
+// watchChan watches the inCh channel for new events from the website.
+// This is what the website uses to reconfigure actions, instead of reloading the app.
+func (a *Actions) watchChan(ctx context.Context) {
+	for event := range a.inCh {
+		a.outCh <- "Actions reconfiguration triggered."
+		ctx := mnd.SetID(ctx)
+
+		if event.Actions != nil {
+			// Handle POSTed actions data.
+			clientInfo := clientinfo.Get()
+			if clientInfo == nil {
+				logs.Log.ErrorfNoShare(mnd.GetID(ctx), "[%s requested] Client info not found", event.EventType)
+				continue
+			}
+
+			clientInfo.Actions = *event.Actions
+			data.Save("clientInfo", clientInfo)
+		} else if _, err := a.CI.SaveClientInfo(ctx, false); err != nil {
+			// ^ Go fetch the actions data from the website.
+			logs.Log.ErrorfNoShare(mnd.GetID(ctx), "[%s requested] Error reconfiguring: %v", event.EventType, err)
+			continue
+		}
+
+		logs.Log.Printf(mnd.GetID(ctx), "[%s requested] Actions reconfiguration: restarting actions.", event.EventType)
+		a.Stop(event.EventType)
+		a.Start(ctx, nil, nil)
+	}
+}
